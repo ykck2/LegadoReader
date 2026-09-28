@@ -6,7 +6,7 @@ ksp = "2.3.7"
 #agp影响范围太大，暂不升级
 #noinspection AndroidGradlePluginVersion
 agp = "8.13.2"
-appcompat = "1.7.1"
+appcompat = "1.8.0"
 # 上游 2018 年后停更，但调用面过大（4 处 Dialog/Listener + ColorPanelView + 10 个 cpv_ 属性 + 4 个布局 + 多份资源），迁移成本远高于收益
 colorpicker = "1.1.0"
 constraintlayout = "2.2.1"
