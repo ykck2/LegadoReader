@@ -42,7 +42,7 @@ collection = "1.6.0"
 hutool = "5.8.22"
 
 protobufJavalite = "4.35.0"
-jsoup = "1.22.2"
+jsoup = "1.23.2"
 rhino = "1.9.1"
 media3 = "1.10.1"
 webkit = "1.16.0"
