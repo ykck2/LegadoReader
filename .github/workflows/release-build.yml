@@ -112,3 +112,5 @@ jobs:
           allowUpdates: true
           draft: false
           prerelease: false
+
+# trigger rebuild
