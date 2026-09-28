@@ -10,7 +10,7 @@ appcompat = "1.7.1"
 # 上游 2018 年后停更，但调用面过大（4 处 Dialog/Listener + ColorPanelView + 10 个 cpv_ 属性 + 4 个布局 + 多份资源），迁移成本远高于收益
 colorpicker = "1.1.0"
 constraintlayout = "2.2.1"
-core = "1.18.0"
+core = "1.19.1"
 flexbox = "3.0.0"
 fragment = "1.8.9"
 documentfile = "1.1.0"
