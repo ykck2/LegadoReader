@@ -94,9 +94,9 @@ object AppUpdate {
 
     private suspend fun getLatestRelease(checkVariant: AppVariant): List<AppReleaseInfo> {
         val url = if (checkVariant.isBeta()) {
-            "https://api.github.com/repos/ykck2/legado/releases/tags/beta"
+            "https://api.github.com/repos/ykck2/LegadoReader/releases/tags/beta"
         } else {
-            "https://api.github.com/repos/ykck2/legado/releases/latest"
+            "https://api.github.com/repos/ykck2/LegadoReader/releases/latest"
         }
         okHttpClient.newCallResponse { url(url) }.use { res ->
             if (!res.isSuccessful) throw NoStackTraceException("获取新版本出错(${res.code})")
