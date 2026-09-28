@@ -16,7 +16,7 @@ fragment = "1.8.9"
 documentfile = "1.1.0"
 
 libarchive = "1.1.6"
-glide = "5.0.7"
+glide = "5.0.9"
 gson = "2.14.0"
 jsonPath = "3.0.0"
 coroutines = "1.11.0"
