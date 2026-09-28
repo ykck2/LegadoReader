@@ -1,15 +1,6 @@
 name: Test Build
 
 on:
-  push:
-    branches:
-      - master
-    paths:
-      - '**'
-      # - '!**/assets/**'
-      # - '!**.md'
-      - '!**/ISSUE_TEMPLATE/**'
-      - '!**/modules/web/**'
   pull_request:
     paths-ignore:
       - '**/modules/web/**'

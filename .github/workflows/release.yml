@@ -1,39 +1,33 @@
 name: Release Build
 
 on:
+  push:
+    branches:
+      - master
+    paths-ignore:
+      - '**.md'
+      - '.github/ISSUE_TEMPLATE/**'
   schedule:
     - cron: '0 0 1,15 * *'
   workflow_dispatch:
 
-jobs:
-  prepare:
-    runs-on: ubuntu-latest
-    if: github.event_name != 'pull_request' && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch')
-    outputs:
-      version: ${{ steps.set-ver.outputs.version }}
-      sign: ${{ steps.check.outputs.sign }}
-    steps:
-      - id: set-ver
-        run: |
-          echo "version=$(date -d "8 hour" -u +3.%y.%m%d%H)" >> $GITHUB_OUTPUT
-      - id: check
-        run: |
-          if [ ! -z "${{ secrets.RELEASE_KEY_STORE }}" ]; then
-            echo "sign=yes" >> $GITHUB_OUTPUT
-          fi
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: true
 
+jobs:
   build:
-    needs: prepare
-    if: ${{ needs.prepare.outputs.sign }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
-    env:
-      VERSION: ${{ needs.prepare.outputs.version }}
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
+      - name: Set Version
+        run: |
+          echo "VERSION=$(date -d "8 hour" -u +3.%y.%m%d%H%M)" >> $GITHUB_ENV
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
@@ -42,18 +36,14 @@ jobs:
           java-version: 17
 
       - name: Release Apk Sign
-        env:
-          RS_FILE: ${{ secrets.RELEASE_KEY_STORE }}
-          RS_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
-          RS_KEY_PASS: ${{ secrets.RELEASE_KEY_PASSWORD }}
-          RS_STORE_PASS: ${{ secrets.RELEASE_STORE_PASSWORD }}
         run: |
+          echo "使用仓库内置jks签名"
           echo -e "\n" >> gradle.properties
-          echo RELEASE_KEY_ALIAS="$RS_ALIAS" >> gradle.properties
-          echo RELEASE_KEY_PASSWORD="$RS_KEY_PASS" >> gradle.properties
-          echo RELEASE_STORE_PASSWORD="$RS_STORE_PASS" >> gradle.properties
-          echo RELEASE_STORE_FILE='./key.jks' >> gradle.properties
-          echo "$RS_FILE" | python3 -c "import sys,base64; sys.stdout.buffer.write(base64.b64decode(sys.stdin.read().strip()))" > $GITHUB_WORKSPACE/app/key.jks
+          cp $GITHUB_WORKSPACE/.github/workflows/legado.jks $GITHUB_WORKSPACE/app/legado.jks
+          echo RELEASE_KEY_ALIAS="legado" >> gradle.properties
+          echo RELEASE_KEY_PASSWORD="gedoor_legado" >> gradle.properties
+          echo RELEASE_STORE_PASSWORD="gedoor_legado" >> gradle.properties
+          echo RELEASE_STORE_FILE='./legado.jks' >> gradle.properties
 
       - name: Unify Version Name
         run: |
