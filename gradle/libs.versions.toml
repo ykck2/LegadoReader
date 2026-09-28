@@ -1,7 +1,7 @@
 [versions]
 
 cronet = "143.7445.0"
-kotlin = "2.3.21"
+kotlin = "2.4.20"
 ksp = "2.3.7"
 #agp影响范围太大，暂不升级
 #noinspection AndroidGradlePluginVersion
