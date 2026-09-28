@@ -26,7 +26,7 @@ material = "1.14.0"
 media = "1.8.0"
 # 出于轻量化考虑，不改用ktor
 nanoHttpd = "2.3.1"
-okhttp = "5.3.2"
+okhttp = "5.5.0"
 preference = "1.2.1"
 quickChineseTransfer = "0.2.16"
 playServicesCronet = "18.1.1"
