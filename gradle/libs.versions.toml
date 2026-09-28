@@ -39,7 +39,7 @@ collection = "1.6.0"
 
 #不要更新版本，新版本用了org.bouncycastle.**
 #noinspection NewerVersionAvailable
-hutool = "5.8.22"
+hutool = "5.8.47"
 
 protobufJavalite = "4.35.0"
 jsoup = "1.22.2"
