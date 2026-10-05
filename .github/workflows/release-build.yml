@@ -110,6 +110,7 @@ jobs:
           bodyFile: ${{ github.workspace }}/RELEASE_NOTES.md
           artifacts: ${{ github.workspace }}/apk/*.apk
           allowUpdates: true
+          replacesArtifacts: true
           draft: false
           prerelease: false
 
@@ -127,5 +128,6 @@ jobs:
           body: Beta 通道滚动发版，内容与最新 Release 一致（共存版检查更新用）
           artifacts: ${{ github.workspace }}/apk/*.apk
           allowUpdates: true
+          replacesArtifacts: true
           draft: false
           prerelease: true
