@@ -1,6 +1,6 @@
 [versions]
 
-cronet = "143.7445.0"
+cronet = "500.1.0"
 kotlin = "2.3.21"
 ksp = "2.3.7"
 #agp影响范围太大，暂不升级
