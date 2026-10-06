@@ -32,7 +32,7 @@ import io.legado.app.constant.AppConst
 import io.legado.app.constant.AppConst.imagePathKey
 import io.legado.app.constant.AppLog
 import io.legado.app.data.entities.RssSource
-import io.legado.app.databinding.ActivityRssReadBinding
+import io.legado.app.databinding.ActivityRssReadLegacyBinding
 import io.legado.app.help.config.AppConfig
 import io.legado.app.help.http.CookieManager
 import io.legado.app.lib.dialogs.SelectItem
@@ -40,9 +40,8 @@ import io.legado.app.lib.dialogs.selector
 import io.legado.app.lib.theme.accentColor
 import io.legado.app.lib.theme.primaryTextColor
 import io.legado.app.model.Download
-import io.legado.app.ui.association.OnLineImportActivity
 import io.legado.app.ui.file.HandleFileContract
-import io.legado.app.ui.login.SourceLoginActivity
+import io.legado.app.ui.file.registerHandleFile
 import io.legado.app.ui.rss.favorites.RssFavoritesDialog
 import io.legado.app.utils.ACache
 import io.legado.app.utils.NetworkUtils
@@ -75,16 +74,16 @@ import java.util.regex.PatternSyntaxException
 /**
  * rss阅读界面
  */
-class ReadRssActivity : VMBaseActivity<ActivityRssReadBinding, ReadRssViewModel>(),
+class ReadRssActivity : VMBaseActivity<ActivityRssReadLegacyBinding, ReadRssViewModel>(),
     RssFavoritesDialog.Callback {
 
-    override val binding by viewBinding(ActivityRssReadBinding::inflate)
+    override val binding by viewBinding(ActivityRssReadLegacyBinding::inflate)
     override val viewModel by viewModels<ReadRssViewModel>()
 
     private var starMenuItem: MenuItem? = null
     private var ttsMenuItem: MenuItem? = null
     private var customWebViewCallback: WebChromeClient.CustomViewCallback? = null
-    private val selectImageDir = registerForActivityResult(HandleFileContract()) {
+    private val selectImageDir = registerHandleFile {
         it.uri?.let { uri ->
             ACache.get().put(imagePathKey, uri.toString())
             viewModel.saveImage(it.value, uri)
@@ -148,7 +147,6 @@ class ReadRssActivity : VMBaseActivity<ActivityRssReadBinding, ReadRssViewModel>
     }
 
     override fun onMenuOpened(featureId: Int, menu: Menu): Boolean {
-        menu.findItem(R.id.menu_login)?.isVisible = !viewModel.rssSource?.loginUrl.isNullOrBlank()
         return super.onMenuOpened(featureId, menu)
     }
 
@@ -174,10 +172,6 @@ class ReadRssActivity : VMBaseActivity<ActivityRssReadBinding, ReadRssViewModel>
             }
 
             R.id.menu_aloud -> readAloud()
-            R.id.menu_login -> startActivity<SourceLoginActivity> {
-                putExtra("type", "rssSource")
-                putExtra("key", viewModel.rssSource?.sourceUrl)
-            }
 
             R.id.menu_browser_open -> binding.webView.url?.let {
                 openUrl(it)
@@ -498,7 +492,7 @@ class ReadRssActivity : VMBaseActivity<ActivityRssReadBinding, ReadRssViewModel>
                 }
 
                 "legado", "yuedu" -> {
-                    startActivity<OnLineImportActivity> {
+                    startActivity<AssociationActivity> {
                         data = url
                     }
                     return true

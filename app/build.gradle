@@ -234,6 +234,7 @@ dependencies {
     androidTestImplementation(libs.room.testing)
 
     implementation(libs.jsoup)
+    implementation(libs.commons.text)
     implementation(libs.json.path)
     implementation(project(path: ':modules:rhino'))
 

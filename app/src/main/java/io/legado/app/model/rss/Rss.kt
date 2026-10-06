@@ -6,9 +6,9 @@ import io.legado.app.help.coroutine.Coroutine
 import io.legado.app.help.http.StrResponse
 import io.legado.app.model.Debug
 import io.legado.app.model.analyzeRule.AnalyzeRule
-import io.legado.app.model.analyzeRule.AnalyzeRule.Companion.setCoroutineContext
 import io.legado.app.model.analyzeRule.AnalyzeUrl
 import io.legado.app.model.analyzeRule.RuleData
+import io.legado.app.constant.AppConst
 import io.legado.app.utils.NetworkUtils
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -40,11 +40,11 @@ object Rss {
         val ruleData = RuleData()
         val analyzeUrl = AnalyzeUrl(
             sortUrl,
-            page = page,
             source = rssSource,
             ruleData = ruleData,
             coroutineContext = coroutineContext,
-            hasLoginHeader = false
+            hasLoginHeader = false,
+            variables = mapOf(AppConst.JsVarName.PAGE to page)
         )
         val res = analyzeUrl.getStrResponseAwait()
         checkRedirect(rssSource, res)
@@ -81,9 +81,9 @@ object Rss {
         Debug.log(rssSource.sourceUrl, "≡获取成功:${rssSource.sourceUrl}")
         Debug.log(rssSource.sourceUrl, res.body ?: "", state = 20)
         val analyzeRule = AnalyzeRule(rssArticle, rssSource)
+        analyzeRule.coroutineContext = coroutineContext
         analyzeRule.setContent(res.body)
             .setBaseUrl(NetworkUtils.getAbsoluteURL(rssArticle.origin, rssArticle.link))
-            .setCoroutineContext(coroutineContext)
             .setRedirectUrl(res.url)
         return analyzeRule.getString(ruleContent)
     }

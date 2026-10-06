@@ -29,6 +29,9 @@ data class RssSource(
     var variableComment: String? = null,
     // js库
     override var jsLib: String? = null,
+    // 是否允许危险api
+    @ColumnInfo(defaultValue = "0")
+    override var enableDangerousApi: Boolean? = false,
     // 启用okhttp CookieJAr 自动保存每次请求的cookie
     @ColumnInfo(defaultValue = "0")
     override var enabledCookieJar: Boolean? = true,
@@ -96,6 +99,10 @@ data class RssSource(
 
     override fun getTag(): String {
         return sourceName
+    }
+
+    override fun getSourceType(): Int {
+        return io.legado.app.constant.SourceType.rss
     }
 
     override fun getKey(): String {

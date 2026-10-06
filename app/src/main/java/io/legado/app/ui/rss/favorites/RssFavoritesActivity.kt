@@ -16,6 +16,7 @@ import io.legado.app.constant.AppLog
 import io.legado.app.data.appDb
 import io.legado.app.databinding.ActivityRssFavoritesBinding
 import io.legado.app.lib.dialogs.alert
+import io.legado.app.lib.dialogs.noButton
 import io.legado.app.lib.theme.accentColor
 import io.legado.app.utils.gone
 import io.legado.app.utils.viewbindingdelegate.viewBinding

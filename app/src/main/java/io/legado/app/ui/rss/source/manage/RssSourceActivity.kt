@@ -77,7 +77,7 @@ class RssSourceActivity : VMBaseActivity<ActivityRssSourceBinding, RssSourceView
             ImportRssSourceDialog(it)
         )
     }
-    private val importDoc = registerForActivityResult(HandleFileContract()) {
+    private val importDoc = registerHandleFile {
         kotlin.runCatching {
             it.uri?.readText(this)?.let {
                 showDialogFragment(
@@ -88,7 +88,7 @@ class RssSourceActivity : VMBaseActivity<ActivityRssSourceBinding, RssSourceView
             toastOnUi("readTextError:${it.localizedMessage}")
         }
     }
-    private val exportResult = registerForActivityResult(HandleFileContract()) {
+    private val exportResult = registerHandleFile {
         it.uri?.let { uri ->
             alert(R.string.export_success) {
                 if (uri.toString().isAbsUrl()) {

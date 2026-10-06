@@ -10,6 +10,7 @@ object RuleBigDataHelp {
 
     private val ruleDataDir = FileUtils.createFolderIfNotExist(appCtx.externalFiles, "ruleData")
     internal val bookData = FileUtils.createFolderIfNotExist(ruleDataDir, "book")
+    internal val rssData = FileUtils.createFolderIfNotExist(ruleDataDir, "rss")
 
     fun putBookVariable(bookUrl: String, key: String, value: String?) {
         val md5BookUrl = MD5Utils.md5Encode(bookUrl)
@@ -65,6 +66,38 @@ object RuleBigDataHelp {
         val md5ChapterUrl = MD5Utils.md5Encode(chapterUrl)
         val md5Key = MD5Utils.md5Encode(key)
         val file = File(FileUtils.getPath(bookData, md5BookUrl, md5ChapterUrl, "$md5Key.txt"))
+        if (file.exists()) {
+            return file.readText()
+        }
+        return null
+    }
+
+    fun putRssVariable(origin: String, link: String, key: String, value: String?) {
+        val md5Origin = MD5Utils.md5Encode(origin)
+        val md5Link = MD5Utils.md5Encode(link)
+        val md5Key = MD5Utils.md5Encode(key)
+        val filePath = FileUtils.getPath(rssData, md5Origin, md5Link, "$md5Key.txt")
+        if (value == null) {
+            FileUtils.delete(filePath, true)
+        } else {
+            val valueFile = FileUtils.createFileIfNotExist(filePath)
+            valueFile.writeText(value)
+            val originFile = File(FileUtils.getPath(rssData, md5Origin, "origin.txt"))
+            if (!originFile.exists()) {
+                originFile.writeText(origin)
+            }
+            val linFile = File(FileUtils.getPath(rssData, md5Origin, md5Link, "origin.txt"))
+            if (!linFile.exists()) {
+                linFile.writeText(link)
+            }
+        }
+    }
+
+    fun getRssVariable(origin: String, link: String, key: String): String? {
+        val md5Origin = MD5Utils.md5Encode(origin)
+        val md5Link = MD5Utils.md5Encode(link)
+        val md5Key = MD5Utils.md5Encode(key)
+        val file = File(FileUtils.getPath(rssData, md5Origin, md5Link, "$md5Key.txt"))
         if (file.exists()) {
             return file.readText()
         }
