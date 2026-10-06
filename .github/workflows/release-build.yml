@@ -64,7 +64,9 @@ jobs:
       - name: Report Compile Errors
         if: failure()
         run: |
-          grep -E "^e: |error: |FAILURE: Build failed" build.log 2>/dev/null | head -120 > compile_errors.txt || true
+          grep -E "^e: |error: |AAPT|Duplicate class|Could not (resolve|find)|FAILURE|Caused by:|What went wrong|OutOfMemory|daemon" build.log 2>/dev/null | head -150 > compile_errors.txt || true
+          echo "===== 日志尾部 =====" >> compile_errors.txt
+          tail -60 build.log >> compile_errors.txt 2>/dev/null || true
           if [ -s compile_errors.txt ]; then
             gh issue create --title "构建错误日志 $(date '+%m%d-%H%M')" --body-file compile_errors.txt || true
           else
