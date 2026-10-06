@@ -22,10 +22,6 @@ import io.legado.app.data.dao.KeyboardAssistsDao
 import io.legado.app.data.dao.ReadRecordDao
 import io.legado.app.data.dao.ReplaceRuleDao
 import io.legado.app.data.dao.RuleSubDao
-import io.legado.app.data.dao.RssArticleDao
-import io.legado.app.data.dao.RssReadRecordDao
-import io.legado.app.data.dao.RssSourceDao
-import io.legado.app.data.dao.RssStarDao
 import io.legado.app.data.dao.SearchKeywordDao
 import io.legado.app.data.dao.ServerDao
 import io.legado.app.data.dao.SourceFilterRuleDao
@@ -44,10 +40,6 @@ import io.legado.app.data.entities.KeyboardAssist
 import io.legado.app.data.entities.ReadRecord
 import io.legado.app.data.entities.ReplaceRule
 import io.legado.app.data.entities.RuleSub
-import io.legado.app.data.entities.RssArticle
-import io.legado.app.data.entities.RssReadRecord
-import io.legado.app.data.entities.RssSource
-import io.legado.app.data.entities.RssStar
 
 import io.legado.app.data.entities.SearchKeyword
 import io.legado.app.data.entities.Server
@@ -76,21 +68,19 @@ val appDb by lazy {
 }
 
 @Database(
-    version = 87,
+    version = 86,
     exportSchema = true,
     entities = [Book::class, BookGroup::class, BookSource::class, BookChapter::class,
         ReplaceRule::class, SearchKeyword::class, Cookie::class,
         Bookmark::class, TxtTocRule::class, ReadRecord::class,
         HttpTTS::class, Cache::class,
         RuleSub::class, DictRule::class, KeyboardAssist::class, Server::class,
-        SourceFilterRule::class,
-        RssSource::class, RssArticle::class, RssStar::class, RssReadRecord::class],
+        SourceFilterRule::class],
     views = [BookSourcePart::class],
     autoMigrations = [
         AutoMigration(from = 83, to = 84),
         AutoMigration(from = 84, to = 85, spec = Migration84To85::class),
         AutoMigration(from = 85, to = 86),
-        AutoMigration(from = 86, to = 87),
     ]
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -112,10 +102,6 @@ abstract class AppDatabase : RoomDatabase() {
     abstract val keyboardAssistsDao: KeyboardAssistsDao
     abstract val serverDao: ServerDao
     abstract val sourceFilterRuleDao: SourceFilterRuleDao
-    abstract val rssSourceDao: RssSourceDao
-    abstract val rssArticleDao: RssArticleDao
-    abstract val rssStarDao: RssStarDao
-    abstract val rssReadRecordDao: RssReadRecordDao
 
     companion object {
 

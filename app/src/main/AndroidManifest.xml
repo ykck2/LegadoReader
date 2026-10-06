@@ -219,29 +219,6 @@
             android:name=".ui.book.rss.ReadRssActivity"
             android:configChanges="orientation|screenSize"
             android:hardwareAccelerated="true"
-            android:launchMode="singleTop" /> <!-- RSS阅读(订阅源) -->
-        <activity
-            android:name=".ui.rss.read.ReadRssActivity"
-            android:configChanges="orientation|screenSize"
-            android:hardwareAccelerated="true"
-            android:launchMode="singleTop" /> <!-- 订阅源管理 -->
-        <activity
-            android:name=".ui.rss.source.manage.RssSourceActivity"
-            android:launchMode="singleTop"
-            android:screenOrientation="behind" /> <!-- 订阅源编辑 -->
-        <activity
-            android:name=".ui.rss.source.edit.RssSourceEditActivity"
-            android:configChanges="locale|keyboardHidden|orientation|screenSize|smallestScreenSize|screenLayout"
-            android:launchMode="singleTask"
-            android:windowSoftInputMode="adjustResize|stateHidden" /> <!-- 订阅源调试 -->
-        <activity
-            android:name=".ui.rss.source.debug.RssSourceDebugActivity"
-            android:launchMode="singleTop" /> <!-- RSS条目 -->
-        <activity
-            android:name=".ui.rss.article.RssSortActivity"
-            android:launchMode="singleTop" /> <!-- Rss收藏 -->
-        <activity
-            android:name=".ui.rss.favorites.RssFavoritesActivity"
             android:launchMode="singleTop" /> <!-- 导入书籍 -->
         <activity
             android:name=".ui.book.import.local.ImportBookActivity"
