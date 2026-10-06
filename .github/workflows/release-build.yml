@@ -18,6 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      issues: write
     steps:
       - uses: actions/checkout@v4
         with:
@@ -55,9 +56,22 @@ jobs:
         run: |
           echo "开始app原包名构建"
           chmod +x gradlew
-          ./gradlew assembleapprelease --build-cache --parallel --daemon --warning-mode all
+          set -o pipefail
+          ./gradlew assembleapprelease --build-cache --parallel --daemon --warning-mode all 2>&1 | tee build.log
           mkdir -p ${{ github.workspace }}/apk/
           find ${{ github.workspace }}/app/build/outputs/apk -name "*.apk" -exec mv {} ${{ github.workspace }}/apk/ \;
+
+      - name: Report Compile Errors
+        if: failure()
+        run: |
+          grep -E "^e: |error: |FAILURE: Build failed" build.log 2>/dev/null | head -120 > compile_errors.txt || true
+          if [ -s compile_errors.txt ]; then
+            gh issue create --title "构建错误日志 $(date '+%m%d-%H%M')" --body-file compile_errors.txt || true
+          else
+            gh issue create --title "构建失败 $(date '+%m%d-%H%M')" --body "见 Actions 运行日志（无捕获到编译错误行）" || true
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build ReleaseA (共存)
         continue-on-error: true
@@ -65,7 +79,8 @@ jobs:
           echo "修改applicationIdSuffix为共存版"
           sed "s/'.release'/'.releaseA'/" $GITHUB_WORKSPACE/app/build.gradle -i
           echo "开始app共存构建"
-          ./gradlew assembleapprelease --build-cache --parallel --daemon --warning-mode all
+          set -o pipefail
+          ./gradlew assembleapprelease --build-cache --parallel --daemon --warning-mode all 2>&1 | tee -a build.log
           find ${{ github.workspace }}/app/build/outputs/apk -name "*.apk" -exec mv {} ${{ github.workspace }}/apk/ \;
 
       - name: Generate Release Notes
