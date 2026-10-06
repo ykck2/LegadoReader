@@ -16,7 +16,6 @@ import io.legado.app.data.entities.RssReadRecord
 import io.legado.app.databinding.DialogRecyclerViewBinding
 import io.legado.app.databinding.ItemRssReadRecordBinding
 import io.legado.app.lib.dialogs.alert
-import io.legado.app.lib.dialogs.noButton
 import io.legado.app.lib.theme.primaryColor
 import io.legado.app.utils.setLayout
 import io.legado.app.utils.viewbindingdelegate.viewBinding

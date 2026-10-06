@@ -1,6 +1,5 @@
 package io.legado.app.utils
 
-import android.app.Dialog
 import android.graphics.Color
 import android.view.Gravity
 import android.view.View
@@ -9,14 +8,12 @@ import android.view.WindowManager
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.core.view.forEach
-import androidx.fragment.app.DialogFragment
 import io.legado.app.R
 import io.legado.app.help.config.AppConfig
 import io.legado.app.lib.theme.Selector
 import io.legado.app.lib.theme.ThemeStore
 import io.legado.app.lib.theme.accentColor
 import io.legado.app.lib.theme.filletBackground
-import splitties.systemservices.windowManager
 
 fun AlertDialog.applyTint(): AlertDialog {
     val context = context
@@ -113,40 +110,4 @@ fun android.view.Window.setupAsBottomDialog(height: Int = ViewGroup.LayoutParams
     attr.gravity = Gravity.BOTTOM
     attributes = attr
     setLayout(ViewGroup.LayoutParams.MATCH_PARENT, height)
-}
-
-fun DialogFragment.setLayout(widthMix: Float, heightMix: Float) {
-    dialog?.setLayout(widthMix, heightMix)
-}
-
-fun Dialog.setLayout(widthMix: Float, heightMix: Float) {
-    val dm = context.windowManager.windowSize
-    window?.setLayout(
-        (dm.widthPixels * widthMix).toInt(),
-        (dm.heightPixels * heightMix).toInt()
-    )
-}
-
-fun DialogFragment.setLayout(width: Int, heightMix: Float) {
-    dialog?.setLayout(width, heightMix)
-}
-
-fun Dialog.setLayout(width: Int, heightMix: Float) {
-    val dm = context.windowManager.windowSize
-    window?.setLayout(
-        width,
-        (dm.heightPixels * heightMix).toInt()
-    )
-}
-
-fun DialogFragment.setLayout(widthMix: Float, height: Int) {
-    dialog?.setLayout(widthMix, height)
-}
-
-fun Dialog.setLayout(widthMix: Float, height: Int) {
-    val dm = context.windowManager.windowSize
-    window?.setLayout(
-        (dm.widthPixels * widthMix).toInt(),
-        height
-    )
 }

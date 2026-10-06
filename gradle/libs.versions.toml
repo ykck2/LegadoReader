@@ -44,7 +44,6 @@ hutool = "5.8.22"
 protobufJavalite = "4.35.0"
 jsoup = "1.22.2"
 rhino = "1.9.1"
-commonsText = "1.13.1"
 media3 = "1.10.1"
 webkit = "1.16.0"
 activity = "1.13.0"
@@ -133,7 +132,6 @@ flexbox = { module = "com.google.android.flexbox:flexbox", version.ref = "flexbo
 gson = { module = "com.google.code.gson:gson", version.ref = "gson" }
 json-path = { module = "com.jayway.jsonpath:json-path", version.ref = "jsonPath" }
 jsoup = { module = "org.jsoup:jsoup", version.ref = "jsoup" }
-commons-text = { module = "org.apache.commons:commons-text", version.ref = "commonsText" }
 junit = { module = "junit:junit", version.ref = "junit" }
 kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "coroutines" }
 kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }

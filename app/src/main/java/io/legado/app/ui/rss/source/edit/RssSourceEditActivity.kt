@@ -19,7 +19,7 @@ import io.legado.app.lib.theme.accentColor
 import io.legado.app.lib.theme.backgroundColor
 import io.legado.app.lib.theme.primaryColor
 import io.legado.app.ui.file.HandleFileContract
-import io.legado.app.ui.file.registerHandleFile
+import io.legado.app.ui.login.SourceLoginActivity
 import io.legado.app.ui.qrcode.QrCodeResult
 import io.legado.app.ui.rss.source.debug.RssSourceDebugActivity
 import io.legado.app.ui.widget.dialog.UrlOptionDialog
@@ -60,7 +60,7 @@ class RssSourceEditActivity :
     private val sourceEntities: ArrayList<EditEntity> = ArrayList()
     private val listEntities: ArrayList<EditEntity> = ArrayList()
     private val webViewEntities: ArrayList<EditEntity> = ArrayList()
-    private val selectDoc = registerHandleFile {
+    private val selectDoc = registerForActivityResult(HandleFileContract()) {
         it.uri?.let { uri ->
             if (uri.isContentScheme()) {
                 sendText(uri.toString())
@@ -133,6 +133,13 @@ class RssSourceEditActivity :
             R.id.menu_debug_source -> viewModel.save(getRssSource()) { source ->
                 startActivity<RssSourceDebugActivity> {
                     putExtra("key", source.sourceUrl)
+                }
+            }
+
+            R.id.menu_login -> viewModel.save(getRssSource()) {
+                startActivity<SourceLoginActivity> {
+                    putExtra("type", "rssSource")
+                    putExtra("key", it.sourceUrl)
                 }
             }
 

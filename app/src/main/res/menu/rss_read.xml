@@ -26,6 +26,9 @@
         app:showAsAction="ifRoom" />
 
     <item
+        android:id="@+id/menu_login"
+        android:title="@string/login"
+        app:showAsAction="never" />
 
     <item
         android:id="@+id/menu_browser_open"

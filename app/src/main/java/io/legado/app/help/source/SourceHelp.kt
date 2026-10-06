@@ -5,15 +5,10 @@ import io.legado.app.data.appDb
 import io.legado.app.data.entities.BaseSource
 import io.legado.app.data.entities.BookSource
 import io.legado.app.data.entities.BookSourcePart
-import io.legado.app.data.entities.RssSource
 import io.legado.app.help.AppCacheManager
 import io.legado.app.help.config.SourceConfig
 import io.legado.app.model.AudioPlay
 import io.legado.app.model.ReadBook
-import io.legado.app.utils.NetworkUtils
-import io.legado.app.utils.splitNotBlank
-import io.legado.app.utils.toastOnUi
-import splitties.init.appCtx
 
 object SourceHelp {
 
@@ -89,71 +84,11 @@ object SourceHelp {
         AppCacheManager.clearSourceVariables()
     }
 
-    fun deleteRssSources(sources: List<RssSource>) {
-        appDb.runInTransaction {
-            sources.forEach {
-                deleteRssSourceInternal(it.sourceUrl)
-            }
-        }
-        AppCacheManager.clearSourceVariables()
-    }
-
-    private fun deleteRssSourceInternal(key: String) {
-        appDb.rssSourceDao.delete(key)
-        appDb.rssArticleDao.delete(key)
-        appDb.cacheDao.deleteSourceVariables(key)
-    }
-
-    fun deleteRssSource(key: String) {
-        deleteRssSourceInternal(key)
-        AppCacheManager.clearSourceVariables()
-    }
-
     fun enableSource(key: String, @SourceType.Type type: Int, enable: Boolean) {
         when (type) {
-            SourceType.book -> appDb.bookSourceDao.enable(key, enable)
-            SourceType.rss -> appDb.rssSourceDao.enable(key, enable)
+            SourceType.book, SourceType.rss -> appDb.bookSourceDao.enable(key, enable)
             SourceType.tts -> Unit
         }
-    }
-
-    fun insertRssSource(vararg rssSources: RssSource) {
-        val rssSourcesGroup = rssSources.groupBy {
-            is18Plus(it.sourceUrl)
-        }
-        rssSourcesGroup[true]?.forEach {
-            appCtx.toastOnUi("${it.sourceName}是18+网址,禁止导入.")
-        }
-        rssSourcesGroup[false]?.let {
-            appDb.rssSourceDao.insert(*it.toTypedArray())
-        }
-    }
-
-    private val list18Plus by lazy {
-        try {
-            return@lazy String(appCtx.assets.open("18PlusList.txt").readBytes())
-                .splitNotBlank("\n").map {
-                    val host = it.trim().removePrefix("*.")
-                    host
-                }
-        } catch (e: Exception) {
-            emptyList()
-        }
-    }
-
-    private fun is18Plus(url: String?): Boolean {
-        if (list18Plus.isEmpty()) {
-            return false
-        }
-        url ?: return false
-        val baseUrl = NetworkUtils.getBaseUrl(url) ?: return false
-        kotlin.runCatching {
-            val host = baseUrl.split("//", ".").let {
-                if (it.size > 2) "${it[it.lastIndex - 1]}.${it.last()}" else return false
-            }
-            return list18Plus.contains(host)
-        }
-        return false
     }
 
     /**
