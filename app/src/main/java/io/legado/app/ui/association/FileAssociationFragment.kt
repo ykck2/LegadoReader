@@ -124,7 +124,8 @@ class FileAssociationFragment() : Fragment() {
             return
         }
         when (uri.path) {
-            "/bookSource", "/rssSource" -> showImportDialog(ImportBookSourceDialog(url, isShell))
+            "/bookSource" -> showImportDialog(ImportBookSourceDialog(url, isShell))
+            "/rssSource" -> showImportDialog(ImportRssSourceDialog(url, isShell))
             "/replaceRule" -> showImportDialog(ImportReplaceRuleDialog(url, isShell))
             "/textTocRule" -> showImportDialog(ImportTxtTocRuleDialog(url, isShell))
             "/httpTTS" -> showImportDialog(ImportHttpTtsDialog(url, isShell))
@@ -139,7 +140,8 @@ class FileAssociationFragment() : Fragment() {
             }
 
             "/importonline" -> when (uri.host) {
-                "booksource", "rsssource" -> showImportDialog(ImportBookSourceDialog(url, isShell))
+                "booksource" -> showImportDialog(ImportBookSourceDialog(url, isShell))
+                "rsssource" -> showImportDialog(ImportRssSourceDialog(url, isShell))
                 "replace" -> showImportDialog(ImportReplaceRuleDialog(url, isShell))
                 else -> viewModel.determineType(url) { title, msg ->
                     finallyDialog(title, msg)
@@ -154,13 +156,14 @@ class FileAssociationFragment() : Fragment() {
 
     private fun handleSuccess(it: Pair<String, String>) {
         when (it.first) {
-            "bookSource", "rssSource" -> showImportDialog(
+            "bookSource" -> showImportDialog(
                 ImportBookSourceDialog(
                     it.second,
                     isShell
                 )
             )
 
+            "rssSource" -> showImportDialog(ImportRssSourceDialog(it.second, isShell))
             "replaceRule" -> showImportDialog(ImportReplaceRuleDialog(it.second, isShell))
             "httpTts" -> showImportDialog(ImportHttpTtsDialog(it.second, isShell))
             "theme" -> showImportDialog(ImportThemeDialog(it.second, isShell))

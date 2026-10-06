@@ -47,6 +47,7 @@ import io.legado.app.ui.main.bookshelf.style2.BookshelfFragment2
 import io.legado.app.ui.main.explore.ExploreFragment
 import io.legado.app.ui.main.home.HomeFragment
 import io.legado.app.ui.main.my.MyFragment
+import io.legado.app.ui.main.rss.RssFragment
 import io.legado.app.ui.widget.dialog.TextDialog
 import io.legado.app.utils.isCreated
 import io.legado.app.utils.navigationBarHeight
@@ -78,6 +79,7 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
     private val idBookshelf1 = 11
     private val idBookshelf2 = 12
     private val idExplore = 1
+    private val idRss = 2
     private val idMy = 3
     private var exitTime: Long = 0
     private var bookshelfReselected: Long = 0
@@ -168,6 +170,9 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
             R.id.menu_discovery ->
                 viewPagerMain.setCurrentItem(realPositions.indexOf(idExplore), false)
 
+            R.id.menu_rss ->
+                viewPagerMain.setCurrentItem(realPositions.indexOf(idRss), false)
+
             R.id.menu_my_config ->
                 viewPagerMain.setCurrentItem(realPositions.indexOf(idMy), false)
         }
@@ -197,7 +202,7 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
 
     private fun initView() = binding.run {
         viewPagerMain.setEdgeEffectColor(primaryColor)
-        viewPagerMain.offscreenPageLimit = 3
+        viewPagerMain.offscreenPageLimit = 4
         viewPagerMain.adapter = adapter
         viewPagerMain.addOnPageChangeListener(PageChangeCallback())
         bottomNavigationView.elevation = elevation
@@ -364,6 +369,7 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
         if (showHome) realPositions.add(idHome)
         realPositions.add(idBookshelf)
         if (showDiscovery) realPositions.add(idExplore)
+        realPositions.add(idRss)
         realPositions.add(idMy)
         bottomMenuCount = realPositions.size
         adapter.notifyDataSetChanged()
@@ -404,6 +410,7 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
             val menuId = when (realPositions[position]) {
                 idHome -> R.id.menu_home
                 idExplore -> R.id.menu_discovery
+                idRss -> R.id.menu_rss
                 idMy -> R.id.menu_my_config
                 else -> R.id.menu_bookshelf
             }
@@ -428,6 +435,7 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
                 || (fragmentId == idBookshelf1 && any is BookshelfFragment1)
                 || (fragmentId == idBookshelf2 && any is BookshelfFragment2)
                 || (fragmentId == idExplore && any is ExploreFragment)
+                || (fragmentId == idRss && any is RssFragment)
                 || (fragmentId == idMy && any is MyFragment)
             ) {
                 return POSITION_UNCHANGED
@@ -441,6 +449,7 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
                 idBookshelf1 -> BookshelfFragment1(position)
                 idBookshelf2 -> BookshelfFragment2(position)
                 idExplore -> ExploreFragment(position)
+                idRss -> RssFragment(position)
                 else -> MyFragment(position)
             }
         }

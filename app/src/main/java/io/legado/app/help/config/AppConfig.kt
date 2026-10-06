@@ -153,7 +153,7 @@ object AppConfig : SharedPreferences.OnSharedPreferenceChangeListener {
 
     var showDiscovery by boolPref(PreferKey.showDiscovery, true)
 
-    var showHome by boolPref(PreferKey.showHome, true)
+    var showHome by boolPref(PreferKey.showHome, false)
 
     val autoRefreshBook by boolPref(PreferKey.autoRefresh)
 

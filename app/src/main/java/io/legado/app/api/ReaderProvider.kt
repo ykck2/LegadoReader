@@ -12,6 +12,7 @@ import android.net.Uri
 import com.google.gson.Gson
 import io.legado.app.api.controller.BookController
 import io.legado.app.api.controller.BookSourceController
+import io.legado.app.api.controller.RssSourceController
 import kotlinx.coroutines.runBlocking
 
 /**
@@ -64,7 +65,7 @@ class ReaderProvider : ContentProvider() {
         if (sMatcher.match(uri) < 0) return -1
         when (RequestCode.entries[sMatcher.match(uri)]) {
             RequestCode.DeleteBookSources -> BookSourceController.deleteSources(selection)
-            RequestCode.DeleteRssSources -> BookSourceController.deleteSources(selection)
+            RequestCode.DeleteRssSources -> RssSourceController.deleteSources(selection)
             else -> throw IllegalStateException(
                 "Unexpected value: " + RequestCode.entries[sMatcher.match(uri)].name
             )
@@ -84,6 +85,14 @@ class ReaderProvider : ContentProvider() {
 
                 RequestCode.SaveBookSources -> values?.let {
                     BookSourceController.saveSources(values.getAsString(postBodyKey))
+                }
+
+                RequestCode.SaveRssSource -> values?.let {
+                    RssSourceController.saveSource(values.getAsString(postBodyKey))
+                }
+
+                RequestCode.SaveRssSources -> values?.let {
+                    RssSourceController.saveSources(values.getAsString(postBodyKey))
                 }
 
                 RequestCode.SaveBook -> values?.let {
@@ -119,6 +128,8 @@ class ReaderProvider : ContentProvider() {
         return if (sMatcher.match(uri) < 0) null else when (RequestCode.entries[sMatcher.match(uri)]) {
             RequestCode.GetBookSource -> SimpleCursor(BookSourceController.getSource(map))
             RequestCode.GetBookSources -> SimpleCursor(BookSourceController.sources)
+            RequestCode.GetRssSource -> SimpleCursor(RssSourceController.getSource(map))
+            RequestCode.GetRssSources -> SimpleCursor(RssSourceController.sources)
             RequestCode.GetBookshelf -> SimpleCursor(BookController.getBooks(mapOf()))
             RequestCode.GetBookContent -> SimpleCursor(BookController.getBookContent(map))
             RequestCode.RefreshToc -> SimpleCursor(BookController.refreshToc(map))

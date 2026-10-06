@@ -1,17 +1,28 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:orientation="vertical">
+    android:layout_height="match_parent"
+    android:padding="16dp">
 
-    <androidx.appcompat.widget.Toolbar
-        android:id="@+id/tool_bar"
-        style="@style/Style.DialogToolbar"
+    <LinearLayout
+        android:id="@+id/vw_bg"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        app:title="@string/favorite" />
+        android:layout_gravity="center"
+        android:background="@drawable/shape_card_view"
+        android:orientation="vertical"
+        tools:ignore="UselessParent">
+
+        <androidx.appcompat.widget.Toolbar
+            android:id="@+id/tool_bar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:theme="?attr/actionBarStyle"
+            app:popupTheme="@style/AppTheme.PopupOverlay"
+            app:title="@string/favorite"
+            app:titleTextAppearance="@style/ToolbarTitle" />
 
         <androidx.core.widget.NestedScrollView
             android:layout_width="match_parent"
@@ -97,4 +108,5 @@
             </LinearLayout>
 
         </com.google.android.flexbox.FlexboxLayout>
-</LinearLayout>
+    </LinearLayout>
+</FrameLayout>
