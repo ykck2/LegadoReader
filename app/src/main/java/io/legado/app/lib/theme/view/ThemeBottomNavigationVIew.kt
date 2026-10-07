@@ -61,10 +61,15 @@ class ThemeBottomNavigationVIew(context: Context, attrs: AttributeSet) :
 
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
+        requestLayout()
+    }
+
+    override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
         val targetHeight = dp(AppConfig.bottomBarHeight)
-        if (layoutParams != null && layoutParams.height != targetHeight) {
-            layoutParams = layoutParams.also { it.height = targetHeight }
-        }
+        val hSpec = android.view.View.MeasureSpec.makeMeasureSpec(
+            targetHeight, android.view.View.MeasureSpec.EXACTLY
+        )
+        super.onMeasure(widthMeasureSpec, hSpec)
     }
 
     private fun dp(value: Int): Int = TypedValue.applyDimension(
