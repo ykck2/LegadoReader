@@ -209,6 +209,7 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
         bottomNavigationView.setOnApplyWindowInsetsListenerCompat { view, windowInsets ->
             val height = windowInsets.navigationBarHeight
             view.bottomPadding = height
+            println("BBCFG insets navH=$height viewH=${view.height}")
             windowInsets.inset(0, 0, 0, height)
         }
     }
