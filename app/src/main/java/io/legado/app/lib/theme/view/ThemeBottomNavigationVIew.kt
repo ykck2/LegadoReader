@@ -70,6 +70,10 @@ class ThemeBottomNavigationVIew(context: Context, attrs: AttributeSet) :
             targetHeight, android.view.View.MeasureSpec.EXACTLY
         )
         super.onMeasure(widthMeasureSpec, hSpec)
+        android.util.Log.e(
+            "BottomBarDebug",
+            "onMeasure target=${targetHeight}px measured=${measuredHeight} incomingSpec=$heightMeasureSpec density=${resources.displayMetrics.density}"
+        )
     }
 
     private fun dp(value: Int): Int = TypedValue.applyDimension(
