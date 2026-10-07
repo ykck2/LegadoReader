@@ -57,7 +57,6 @@ class ThemeBottomNavigationVIew(context: Context, attrs: AttributeSet) :
             3 -> NavigationBarView.LABEL_VISIBILITY_AUTO
             else -> NavigationBarView.LABEL_VISIBILITY_UNLABELED
         }
-        println("BBCFG prefs h=${AppConfig.bottomBarHeight} icon=${AppConfig.bottomBarIconSize} density=${resources.displayMetrics.density}")
     }
 
     override fun onAttachedToWindow() {
@@ -71,7 +70,6 @@ class ThemeBottomNavigationVIew(context: Context, attrs: AttributeSet) :
             targetHeight, android.view.View.MeasureSpec.EXACTLY
         )
         super.onMeasure(widthMeasureSpec, hSpec)
-        println("BBCFG onMeasure target=${targetHeight}px inSpecH=$heightMeasureSpec outH=$measuredHeight padB=$paddingBottom")
     }
 
     private fun dp(value: Int): Int = TypedValue.applyDimension(

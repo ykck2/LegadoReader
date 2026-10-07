@@ -56,7 +56,7 @@ object AppUpdate {
             val checkVariant = getCheckVariant()
             getLatestRelease(checkVariant)
                 .filter { it.appVariant == checkVariant }
-                .filter { it.versionName > AppConst.appInfo.versionName }
+                .filter { isNewerVersion(it.versionName, AppConst.appInfo.versionName) }
                 .minByOrNull { info ->
                     when {
                         supportedAbis.any { abi ->
@@ -78,6 +78,15 @@ object AppUpdate {
                 }
             return@async null
         }.timeout(10000)
+    }
+
+    /**
+     * 版本号为 3.y.MMdd（如 3.26.1007）。本地旧版可能带构建时间后缀（3.26.10072144），
+     * 若新版是本地版的前缀则视为升级；相等视为同版本
+     */
+    private fun isNewerVersion(remote: String, local: String): Boolean {
+        if (remote == local) return false
+        return remote > local || local.startsWith(remote)
     }
 
     private fun getCheckVariant(): AppVariant {
