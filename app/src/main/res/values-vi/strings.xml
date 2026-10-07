@@ -48,7 +48,6 @@
     <string name="favorite">Yêu thích</string>
     <string name="in_favorites">Đã yêu thích</string>
     <string name="out_favorites">Chưa yêu thích</string>
-    <string name="rss">Nguồn cấp RSS</string>
     <string name="all">Tất cả</string>
     <string name="recent_reading">Đọc gần đây</string>
     <string name="last_read">Lần đọc cuối</string>
@@ -787,7 +786,6 @@
     <string name="sort_by_lastUpdateTime">Sắp xếp theo thời gian cập nhật</string>
     <string name="sort_by_respondTime">Sắp xếp theo thời gian phản hồi</string>
     <string name="search_content">Tìm kiếm nội dung</string>
-    <string name="rss_source_empty">Hiện tại trống!</string>
     <string name="explore_empty">Hiện tại trống!</string>
     <string name="page_key_set_help">Tập trung vào hộp nhập và nhấn một phím vật lý sẽ tự động nhập giá trị của phím, và nhiều phím sẽ được tự động phân tách bằng dấu phẩy.</string>
     <string name="theme_name">Tên chủ đề</string>
@@ -856,7 +854,6 @@
     <string name="boo_src">Mã nguồn sách</string>
     <string name="toc_src">Mã nguồn chương</string>
     <string name="content_src">Mã nguồn nội dung</string>
-    <string name="list_src">Liệt kê mã nguồn</string>
     <string name="title_font_size">Cỡ chữ</string>
     <string name="title_margin_top">Lề trên</string>
     <string name="title_margin_bottom">Lề dưới</string>

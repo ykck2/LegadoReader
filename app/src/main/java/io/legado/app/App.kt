@@ -94,12 +94,13 @@ class App : Application() {
             BookCover.toString()
         }
         Coroutine.async {
-            if (LocalConfig.lastBackup + TimeUnit.DAYS.toMillis(1) < System.currentTimeMillis()) {
+            if (LocalConfig.lastCleanup + TimeUnit.DAYS.toMillis(1) < System.currentTimeMillis()) {
                 appDb.cacheDao.clearDeadline(System.currentTimeMillis())
                 BookHelp.clearInvalidCache()
                 Backup.clearCache()
                 ReadBookConfig.clearBgAndCache()
                 ThemeConfig.clearBg()
+                LocalConfig.lastCleanup = System.currentTimeMillis()
             }
         }
         Coroutine.async {

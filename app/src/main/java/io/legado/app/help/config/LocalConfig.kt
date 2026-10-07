@@ -35,6 +35,12 @@ by appCtx.getSharedPreferences("local", Context.MODE_PRIVATE) {
             putLong("lastBackup", value)
         }
 
+    var lastCleanup: Long
+        get() = getLong("lastCleanup", 0)
+        set(value) {
+            putLong("lastCleanup", value)
+        }
+
     var privacyPolicyOk: Boolean
         get() = getBoolean("privacyPolicyOk")
         set(value) {

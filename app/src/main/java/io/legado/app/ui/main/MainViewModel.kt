@@ -18,6 +18,7 @@ import io.legado.app.constant.NotificationId
 import io.legado.app.data.AppDatabase
 import io.legado.app.data.appDb
 import io.legado.app.data.entities.Book
+import io.legado.app.data.entities.BookChapter
 import io.legado.app.data.entities.BookSource
 import io.legado.app.help.AppWebDav
 import io.legado.app.help.DefaultData
@@ -285,18 +286,7 @@ class MainViewModel(application: Application) : BaseViewModel(application) {
                     val oldBook = book.copy()
                     WebBook.getBookInfoAwait(source, book)
                     val toc = WebBook.getChapterListAwait(source, book).getOrThrow()
-                    book.sync(oldBook)
-                    book.removeType(BookType.updateError)
-                    if (book.bookUrl == bookUrl) {
-                        appDb.bookDao.update(book)
-                    } else {
-                        appDb.bookDao.replace(oldBook, book)
-                        BookHelp.updateCacheFolder(oldBook, book)
-                    }
-                    appDb.bookChapterDao.delByBook(bookUrl)
-                    appDb.bookChapterDao.insert(*toc.toTypedArray())
-                    ReadBook.onChapterListUpdated(book)
-                    addDownload(source, book)
+                    updateChapterList(source, oldBook, book, toc)
                     postEvent(EventBus.UP_BOOKSHELF, book.bookUrl)
                 }.onFailure {
                     currentCoroutineContext().ensureActive()
@@ -479,18 +469,7 @@ class MainViewModel(application: Application) : BaseViewModel(application) {
             }
 
             val toc = tocResult.getOrThrow()
-            book.sync(oldBook)
-            book.removeType(BookType.updateError)
-            if (book.bookUrl == bookUrl) {
-                appDb.bookDao.update(book)
-            } else {
-                appDb.bookDao.replace(oldBook, book)
-                BookHelp.updateCacheFolder(oldBook, book)
-            }
-            appDb.bookChapterDao.delByBook(bookUrl)
-            appDb.bookChapterDao.insert(*toc.toTypedArray())
-            ReadBook.onChapterListUpdated(book)
-            addDownload(source, book)
+            updateChapterList(source, oldBook, book, toc)
         }.onFailure {
             currentCoroutineContext().ensureActive()
             AppLog.put("${book.name} 更新目录失败\n${it.localizedMessage}", it)
@@ -503,6 +482,30 @@ class MainViewModel(application: Application) : BaseViewModel(application) {
         }
     }
 
+
+    private fun updateChapterList(
+        source: BookSource,
+        oldBook: Book,
+        book: Book,
+        chapters: List<BookChapter>
+    ) {
+        book.sync(oldBook)
+        book.removeType(BookType.updateError)
+        appDb.runInTransaction {
+            if (book.bookUrl == oldBook.bookUrl) {
+                appDb.bookDao.update(book)
+            } else {
+                appDb.bookDao.replace(oldBook, book)
+            }
+            appDb.bookChapterDao.delByBook(oldBook.bookUrl)
+            appDb.bookChapterDao.insert(*chapters.toTypedArray())
+        }
+        if (book.bookUrl != oldBook.bookUrl) {
+            BookHelp.updateCacheFolder(oldBook, book)
+        }
+        ReadBook.onChapterListUpdated(book)
+        addDownload(source, book)
+    }
 
     @Synchronized
     private fun addDownload(source: BookSource, book: Book) {

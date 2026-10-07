@@ -24,10 +24,39 @@ object AppFreezeMonitor {
     }
 
     private var registeredReceiver = false
+    private var monitoring = false
+    private var previous = 0L
 
+    private val runnable = object : Runnable {
+        override fun run() {
+            synchronized(this@AppFreezeMonitor) {
+                if (!monitoring) return@synchronized
+                val current = SystemClock.uptimeMillis()
+                val elapsed = current - previous
+                previous = current
+                val extra = elapsed - 3000
+
+                if (extra > 300) {
+                    LogUtils.d(TAG, "检测到应用被系统冻结，时长：$extra 毫秒")
+                }
+
+                if (AppConfig.recordLog) {
+                    handler.postDelayed(this, 3000)
+                } else {
+                    monitoring = false
+                }
+            }
+        }
+    }
+
+    @Synchronized
     @SuppressLint("UnspecifiedRegisterReceiverFlag")
     fun init(context: Context) {
         if (!AppConfig.recordLog) {
+            if (monitoring) {
+                monitoring = false
+                handler.removeCallbacks(runnable)
+            }
             if (registeredReceiver) {
                 registeredReceiver = false
                 context.unregisterReceiver(screenStatusReceiver)
@@ -40,23 +69,9 @@ object AppFreezeMonitor {
             context.registerReceiver(screenStatusReceiver, screenStatusReceiver.filter)
         }
 
-        var previous = SystemClock.uptimeMillis()
-
-        val runnable = object : Runnable {
-            override fun run() {
-                val current = SystemClock.uptimeMillis()
-                val elapsed = current - previous
-                val extra = elapsed - 3000
-
-                if (extra > 300) {
-                    LogUtils.d(TAG, "检测到应用被系统冻结，时长：$extra 毫秒")
-                }
-
-                if (AppConfig.recordLog) {
-                    handler.postDelayed(this, 3000)
-                }
-            }
-        }
+        if (monitoring) return
+        previous = SystemClock.uptimeMillis()
+        monitoring = true
         handler.postDelayed(runnable, 3000)
     }
 

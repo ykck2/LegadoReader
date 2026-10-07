@@ -15,7 +15,6 @@ import android.text.Spannable
 import android.text.Spanned
 import android.text.TextWatcher
 import android.text.style.BackgroundColorSpan
-import android.text.style.ForegroundColorSpan
 import android.text.style.ReplacementSpan
 import android.util.AttributeSet
 import android.util.SparseArray
@@ -914,15 +913,6 @@ class CodeView @JvmOverloads constructor(context: Context, attrs: AttributeSet? 
         if (tabWidthInCharacters == characters) return
         tabWidthInCharacters = characters
         tabWidth = (paint.measureText(" ") * characters).roundToInt()
-    }
-
-    private fun clearSpans(editable: Editable) {
-        activeSyntaxSpans.values.forEach { editable.removeSpan(it) }
-        activeSyntaxSpans.clear()
-        editable.getSpans(0, editable.length, ForegroundColorSpan::class.java)
-            .forEach(editable::removeSpan)
-        editable.getSpans(0, editable.length, BackgroundColorSpan::class.java)
-            .forEach(editable::removeSpan)
     }
 
     private fun convertTabs(start: Int, count: Int) {

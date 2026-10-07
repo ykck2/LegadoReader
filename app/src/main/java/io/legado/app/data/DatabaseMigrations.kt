@@ -10,8 +10,16 @@ object DatabaseMigrations {
 
     val migrations: Array<Migration> by lazy {
         arrayOf(
-            migration_80_81, migration_81_82, migration_82_83
+            migration_80_81, migration_81_82, migration_82_83, migration_86_87
         )
+    }
+
+    private val migration_86_87 = object : Migration(86, 87) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                "CREATE INDEX IF NOT EXISTS index_chapters_bookUrl_index ON chapters (bookUrl, `index`)"
+            )
+        }
     }
 
     private val migration_80_81 = object : Migration(80, 81) {

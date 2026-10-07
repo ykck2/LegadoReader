@@ -49,7 +49,6 @@
     <string name="favorite">Favorite</string>
     <string name="in_favorites">in Favorites</string>
     <string name="out_favorites">Not in Favorites</string>
-    <string name="rss">RSS feeds</string>
     <string name="all">All</string>
     <string name="recent_reading">Recent reading</string>
     <string name="last_read">Last reading</string>
@@ -815,7 +814,6 @@
     <string name="sort_by_lastUpdateTime">Sort by update time</string>
     <string name="sort_by_respondTime">Sort by respond time</string>
     <string name="search_content">Search content</string>
-    <string name="rss_source_empty">Empty now!</string>
     <string name="explore_empty">Empty now!</string>
     <string name="page_key_set_help">Focusing on the input box and pressing a physical key will automatically enter the value of the key, and multiple keys will be automatically separated by commas.</string>
     <string name="theme_name">Theme name</string>
@@ -885,7 +883,6 @@
     <string name="toc_src">Chapters source code</string>
     <string name="content_src">Content source code</string>
     <string name="review_src">Review source code</string>
-    <string name="list_src">List source code</string>
     <string name="title_font_size">Font size</string>
     <string name="title_margin_top">Margin top</string>
     <string name="title_margin_bottom">Margin bottom</string>

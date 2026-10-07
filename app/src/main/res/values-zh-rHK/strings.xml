@@ -46,7 +46,6 @@
     <string name="favorite">收藏</string>
     <string name="in_favorites">已收藏</string>
     <string name="out_favorites">未收藏</string>
-    <string name="rss">訂閲</string>
     <string name="all">全部</string>
     <string name="recent_reading">最近閲讀</string>
     <string name="last_read">最後閲讀</string>
@@ -789,7 +788,6 @@
     <string name="share_selected_source">分享選中源</string>
     <string name="sort_by_lastUpdateTime">更新時間排序</string>
     <string name="search_content">全文搜索</string>
-    <string name="rss_source_empty">Empty now!</string>
     <string name="explore_empty">目前沒有發現源!</string>
     <string name="page_key_set_help">將焦點放到輸入框按下物理按鍵會自動輸入鍵值,多個按鍵會自動用英文逗號隔開.</string>
     <string name="theme_name">主題名</string>
@@ -848,7 +846,6 @@
     <string name="boo_src">書輯源碼</string>
     <string name="toc_src">目錄源碼</string>
     <string name="content_src">正文源碼</string>
-    <string name="list_src">列表源碼</string>
     <string name="url_already">此url訂閱咗</string>
     <string name="high_brush_title">高刷</string>
     <string name="high_brush_summary">使用螢幕最高刷新率</string>

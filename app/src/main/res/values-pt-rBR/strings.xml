@@ -49,7 +49,6 @@
     <string name="favorite">Favorito</string>
     <string name="in_favorites">em Favoritos</string>
     <string name="out_favorites">Não está em Favoritos</string>
-    <string name="rss">Assinatura</string>
     <string name="all">Tudo</string>
     <string name="recent_reading">Leitura recente</string>
     <string name="last_read">Última leitura</string>
@@ -789,7 +788,6 @@
     <string name="select_theme">Alterar o tema padrão</string>
     <string name="sort_by_lastUpdateTime">Ordenar por tempo de atualização</string>
     <string name="search_content">Pesquisar conteúdo</string>
-    <string name="rss_source_empty">Empty now!</string>
     <string name="explore_empty">Atualmente não há nenhuma fonte!</string>
     <string name="page_key_set_help">将焦点放到输入框按下物理按键会自动录入键值,多个按键会自动用英文逗号隔开.</string>
     <string name="theme_name">Nome de tema</string>
@@ -853,7 +851,6 @@
     <string name="boo_src">Código fonte do livro</string>
     <string name="toc_src">Código fonte dos capítulos</string>
     <string name="content_src">Código fonte do conteúdo</string>
-    <string name="list_src">Listar código fonte</string>
     <string name="title_font_size">Tamanho de letra</string>
     <string name="title_margin_top">Borda superior</string>
     <string name="title_margin_bottom">Borda inferior</string>

@@ -48,7 +48,6 @@
     <string name="favorite">Favorite</string>
     <string name="in_favorites">in Favorites</string>
     <string name="out_favorites">Not in Favorites</string>
-    <string name="rss">Subscription</string>
     <string name="all">All</string>
     <string name="recent_reading">Recent reading</string>
     <string name="custom_export_section">カスタムEPUBエクスポートの章</string>
@@ -791,7 +790,6 @@
     <string name="select_theme">Switch default theme</string>
     <string name="sort_by_lastUpdateTime">Sort by update time</string>
     <string name="search_content">Search content</string>
-    <string name="rss_source_empty">Empty now!</string>
     <string name="explore_empty">Empty now!</string>
     <string name="page_key_set_help">将焦点放到输入框按下物理按键会自动录入键值,多个按键会自动用英文逗号隔开.</string>
     <string name="theme_name">Theme name</string>
@@ -855,7 +853,6 @@
     <string name="boo_src">Book source code</string>
     <string name="toc_src">Chapters source code</string>
     <string name="content_src">Content source code</string>
-    <string name="list_src">List source code</string>
     <string name="title_font_size">Font size</string>
     <string name="title_margin_top">Margin top</string>
     <string name="title_margin_bottom">Marigin bottom</string>

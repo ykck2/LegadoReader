@@ -9,6 +9,7 @@ import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.Dispatchers.Main
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.asCoroutineDispatcher
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
@@ -43,14 +44,21 @@ object DispatchersMonitor {
     @OptIn(ExperimentalCoroutinesApi::class)
     private fun monitor(dispatcher: CoroutineDispatcher) {
         scope.launch {
-            while (isActive) select {
-                launch {
+            while (isActive) {
+                val probe = launch {
                     withContext(dispatcher) {
                         delay(3000)
                     }
-                }.onJoin {}
-                onTimeout(5000) {
-                    LogUtils.d(TAG, "Dispatcher $dispatcher is timed out waiting for for 5000ms.")
+                }
+                try {
+                    select {
+                        probe.onJoin {}
+                        onTimeout(5000) {
+                            LogUtils.d(TAG, "Dispatcher $dispatcher is timed out waiting for for 5000ms.")
+                        }
+                    }
+                } finally {
+                    probe.cancelAndJoin()
                 }
             }
         }
