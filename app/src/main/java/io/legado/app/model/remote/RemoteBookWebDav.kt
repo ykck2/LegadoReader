@@ -16,7 +16,6 @@ import io.legado.app.model.analyzeRule.CustomUrl
 import io.legado.app.model.fileBook.FileBook
 import io.legado.app.utils.NetworkUtils
 import io.legado.app.utils.isContentScheme
-import kotlinx.coroutines.runBlocking
 
 class RemoteBookWebDav(
     val rootBookUrl: String,
@@ -24,10 +23,8 @@ class RemoteBookWebDav(
     val serverID: Long? = null
 ) : RemoteBookManager() {
 
-    init {
-        runBlocking {
-            WebDav(rootBookUrl, authorization).makeAsDir()
-        }
+    suspend fun ensureRootDir() {
+        WebDav(rootBookUrl, authorization).ensureDirectory()
     }
 
 
@@ -75,7 +72,7 @@ class RemoteBookWebDav(
 
     override suspend fun upload(book: Book) = withNetworkCheck {
         val localBookUri = book.bookUrl.toUri()
-        val putUrl = "$rootBookUrl${book.originName}"
+        val putUrl = WebDav.joinPath(rootBookUrl, book.originName)
         val webDav = WebDav(putUrl, authorization)
         if (localBookUri.isContentScheme()) {
             webDav.upload(localBookUri)

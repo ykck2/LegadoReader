@@ -9,3 +9,5 @@ open class WebDavException(msg: String) : Exception(msg) {
 }
 
 class ObjectNotFoundException(msg: String) : WebDavException(msg)
+
+class WebDavConflictException(msg: String) : WebDavException(msg)

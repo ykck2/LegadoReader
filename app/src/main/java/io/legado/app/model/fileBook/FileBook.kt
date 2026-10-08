@@ -221,6 +221,7 @@ object FileBook : BaseFileBook {
                     author = "",
                     originName = name,
                     latestChapterTime = lastModify,
+                    lastCheckTime = lastModify,
                     order = appDb.bookDao.minOrder - 1,
                     origin = origin,
                     type = BookType.image or BookType.local
@@ -241,6 +242,7 @@ object FileBook : BaseFileBook {
                     author = "",
                     originName = name,
                     latestChapterTime = lastModify,
+                    lastCheckTime = lastModify,
                     order = appDb.bookDao.minOrder - 1,
                     origin = origin,
                     type = BookType.text or BookType.local
@@ -281,6 +283,7 @@ object FileBook : BaseFileBook {
 
             else -> importLocalFile(saveBookFile(origin, name)).apply {
                 this.origin = origin
+                this.lastCheckTime = lastModify
                 save()
             }
         }

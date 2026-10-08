@@ -74,6 +74,9 @@ class RemoteBookViewModel(application: Application) : BaseViewModel(application)
             appDb.serverDao.get(AppConfig.remoteServerId)?.getWebDavConfig()?.let {
                 remoteBookWebDav =
                     RemoteBookWebDav(it.url, Authorization(it), AppConfig.remoteServerId)
+                //浏览根目录若不存在则创建；只读服务器允许失败后照常浏览
+                kotlin.runCatching { remoteBookWebDav?.ensureRootDir() }
+                    .onFailure { e -> AppLog.put("创建WebDav根目录失败\n${e.localizedMessage}", e) }
             } ?: run {
                 isDefaultWebdav = true
                 remoteBookWebDav =

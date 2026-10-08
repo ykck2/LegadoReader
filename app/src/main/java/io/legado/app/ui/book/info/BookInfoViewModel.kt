@@ -3,6 +3,7 @@ package io.legado.app.ui.book.info
 import android.app.Application
 import android.net.Uri
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.net.toUri
 import androidx.lifecycle.MutableLiveData
 import io.legado.app.R
 import io.legado.app.base.BaseReadViewModel
@@ -35,6 +36,11 @@ class BookInfoViewModel(application: Application) : BaseReadViewModel(applicatio
     val bookData = MutableLiveData<Book>()
     val waitDialogData = MutableLiveData<Boolean>()
     val actionLive = MutableLiveData<String>()
+
+    /** 云端需要确认后才可覆盖；Activity 弹确认后以 overwrite=true 重入 uploadBook */
+    val uploadConflictData = MutableLiveData<UploadConflict>()
+
+    data class UploadConflict(val sameNameOnCloud: Boolean, val remoteLastModify: Long)
 
     override var curBook: Book?
         get() = bookData.value
@@ -77,19 +83,60 @@ class BookInfoViewModel(application: Application) : BaseReadViewModel(applicatio
     }
 
     private suspend fun refreshWebDavBook(book: Book) {
-        book.getRemoteUrl()?.let { remoteUrl ->
-            val bookWebDav =
-                AppWebDav.defaultBookWebDav ?: throw NoStackTraceException("webDav没有配置")
-            val remoteBook = bookWebDav.getRemoteBook(remoteUrl)
-            if (remoteBook == null) {
-                book.origin = BookType.localTag
-                return
+        val remoteUrl = book.getRemoteUrl() ?: return
+        //按书籍origin里的serverID选择授权，缺失serverID时回退默认配置
+        val webDav = io.legado.app.lib.webdav.WebDav.fromPath(remoteUrl)
+        val remoteFile = webDav.getWebDavFileOrNull()
+        if (remoteFile == null) {
+            book.origin = BookType.localTag
+            return
+        }
+        if (remoteFile.lastModify <= book.lastCheckTime) return
+        val oldBookUrl = book.bookUrl
+        val oldDurIndex = book.durChapterIndex
+        val oldDurTitle = book.durChapterTitle
+        val oldDurPos = book.durChapterPos
+        val oldTotalChapterNum = book.totalChapterNum
+        val oldLastCheckTime = book.lastCheckTime
+        val oldLatestChapterTitle = book.latestChapterTitle
+        val oldWordCount = book.wordCount
+        val oldLatestChapterTime = book.latestChapterTime
+        val uri = webDav.downloadInputStream().let {
+            FileBook.saveBookFile(it, book.originName)
+        }
+        val newBookUrl = if (uri.isContentScheme()) uri.toString() else uri.path!!
+        try {
+            book.bookUrl = newBookUrl
+            //新文件版本，清理旧内容缓存后重新解析章节目录；解析失败回滚内存状态并保留旧目录
+            BookHelp.clearCache(book)
+            val chapters = FileBook.getChapterList(book)
+            book.durChapterIndex = BookHelp.getDurChapter(
+                oldDurIndex, oldDurTitle, chapters, oldTotalChapterNum
+                //空目录时lastIndex为-1，coerceIn(0,-1)会抛越界，先归零
+            ).coerceIn(0, chapters.lastIndex.coerceAtLeast(0))
+            book.durChapterPos = oldDurPos
+            book.durChapterTitle = chapters.getOrNull(book.durChapterIndex)?.title
+            book.lastCheckTime = remoteFile.lastModify
+            appDb.runInTransaction {
+                if (oldBookUrl != book.bookUrl) {
+                    appDb.bookChapterDao.delByBook(oldBookUrl)
+                }
+                appDb.bookChapterDao.delByBook(book.bookUrl)
+                appDb.bookChapterDao.insert(*chapters.toTypedArray())
+                appDb.bookDao.update(book)
             }
-            if (remoteBook.lastModify > book.lastCheckTime) {
-                val uri = bookWebDav.downloadRemoteBook(remoteBook)
-                book.bookUrl = if (uri.isContentScheme()) uri.toString() else uri.path!!
-                book.lastCheckTime = remoteBook.lastModify
-            }
+            ReadBook.onChapterListUpdated(book)
+        } catch (e: Throwable) {
+            book.bookUrl = oldBookUrl
+            book.durChapterIndex = oldDurIndex
+            book.durChapterTitle = oldDurTitle
+            book.durChapterPos = oldDurPos
+            book.totalChapterNum = oldTotalChapterNum
+            book.lastCheckTime = oldLastCheckTime
+            book.latestChapterTitle = oldLatestChapterTitle
+            book.wordCount = oldWordCount
+            book.latestChapterTime = oldLatestChapterTime
+            throw e
         }
     }
 
@@ -220,20 +267,92 @@ class BookInfoViewModel(application: Application) : BaseReadViewModel(applicatio
         }
     }
 
-    fun uploadBook(book: Book) {
+    /**
+     * 上传本地书籍到WebDav。overwrite=false 时云端有更新则通过 uploadConflictData 请求用户确认，
+     * 确认后以 overwrite=true 重入；条件PUT避免确认到上传间被他人覆盖。
+     */
+    fun uploadBook(book: Book, overwrite: Boolean = false) {
         execute {
             waitDialogData.postValue(true)
-            val bookWebDav =
-                AppWebDav.defaultBookWebDav ?: throw NoStackTraceException("未配置webDav")
-            bookWebDav.upload(book)
-            book.lastCheckTime = System.currentTimeMillis()
+            if (book.bookUrl.startsWith(BookType.webDavTag)) {
+                throw NoStackTraceException("书籍尚未下载到本地，请先下载后再上传")
+            }
+            val remoteUrl = book.getRemoteUrl()
+            //已有云端关联时回写原地址（剥离CustomUrl属性），否则上传到默认books目录
+            val targetUrl: String
+            val webDav: io.legado.app.lib.webdav.WebDav
+            if (remoteUrl != null) {
+                targetUrl = io.legado.app.model.analyzeRule.CustomUrl(remoteUrl).getUrl()
+                //保留origin中的serverID供授权解析，不能用剥离属性后的URL建连接
+                webDav = io.legado.app.lib.webdav.WebDav.fromPath(remoteUrl)
+            } else {
+                val bookWebDav =
+                    AppWebDav.defaultBookWebDav ?: throw NoStackTraceException("未配置webDav")
+                targetUrl =
+                    io.legado.app.lib.webdav.WebDav.joinPath(bookWebDav.rootBookUrl, book.originName)
+                webDav = io.legado.app.lib.webdav.WebDav(targetUrl, bookWebDav.authorization)
+            }
+            val remoteFile = webDav.getWebDavFileOrNull()
+            if (remoteFile != null && !overwrite) {
+                //未关联书籍遇到云端同名文件一律确认；已关联书籍仅在云端较新时确认
+                val needConfirm = remoteUrl == null || remoteFile.lastModify > book.lastCheckTime
+                if (needConfirm) {
+                    return@execute UploadConflict(remoteUrl == null, remoteFile.lastModify)
+                }
+            }
+            if (remoteFile == null) {
+                uploadBookFile(webDav, book, expectedLastModify = null, createOnly = true)
+            } else {
+                uploadBookFile(
+                    webDav, book,
+                    expectedLastModify = remoteFile.lastModify, createOnly = false
+                )
+            }
+            //以服务器实际修改时间作为同步基线
+            book.lastCheckTime = webDav.getWebDavFileOrNull()?.lastModify
+                ?: System.currentTimeMillis()
+            if (remoteUrl == null) {
+                book.origin = BookType.webDavTag + targetUrl
+            }
             book.save()
-        }.onSuccess {
-            context.toastOnUi("上传成功")
+            null
+        }.onSuccess { conflict ->
+            if (conflict != null) {
+                uploadConflictData.postValue(conflict)
+            } else {
+                context.toastOnUi("上传成功")
+                bookData.postValue(book)
+            }
         }.onError {
-            context.toastOnUi(it.localizedMessage)
+            if (it is io.legado.app.lib.webdav.WebDavConflictException) {
+                context.toastOnUi("云端文件刚被修改，已取消上传，请确认后重试")
+            } else {
+                AppLog.put("上传书籍<${book.name}>失败", it, true)
+            }
         }.onFinally {
             waitDialogData.postValue(false)
+        }
+    }
+
+    private suspend fun uploadBookFile(
+        webDav: io.legado.app.lib.webdav.WebDav,
+        book: Book,
+        expectedLastModify: Long?,
+        createOnly: Boolean
+    ) {
+        val localBookUri = book.bookUrl.toUri()
+        if (localBookUri.isContentScheme()) {
+            webDav.uploadChecked(
+                localBookUri,
+                expectedLastModify = expectedLastModify,
+                createOnly = createOnly
+            )
+        } else {
+            webDav.uploadChecked(
+                java.io.File(localBookUri.path!!),
+                expectedLastModify = expectedLastModify,
+                createOnly = createOnly
+            )
         }
     }
 

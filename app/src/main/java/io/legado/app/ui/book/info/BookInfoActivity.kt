@@ -47,7 +47,6 @@ import io.legado.app.databinding.ActivityBookInfoBinding
 import io.legado.app.databinding.ItemFilletTextBinding
 import io.legado.app.help.IntentData
 import io.legado.app.help.book.addType
-import io.legado.app.help.book.getRemoteUrl
 import io.legado.app.help.book.isAudio
 import io.legado.app.help.book.isImage
 import io.legado.app.help.book.isLocal
@@ -203,6 +202,18 @@ class BookInfoActivity :
         viewModel.bookData.observe(this) { showBook(it) }
         viewModel.chapterListData.observe(this) { upLoading(false, it) }
         viewModel.waitDialogData.observe(this) { upWaitDialogStatus(it) }
+        viewModel.uploadConflictData.observe(this) { conflict ->
+            val book = viewModel.getBook(false) ?: return@observe
+            val message = if (conflict.sameNameOnCloud) {
+                "云端已有同名文件，继续上传将覆盖云端文件"
+            } else {
+                "云端副本比上次同步更新，继续上传将覆盖云端修改"
+            }
+            alert(getString(R.string.draw), message) {
+                okButton { viewModel.uploadBook(book, overwrite = true) }
+                cancelButton()
+            }
+        }
         viewModel.initData()
     }
 
@@ -226,7 +237,9 @@ class BookInfoActivity :
         menu.findItem(R.id.menu_login)?.isVisible = viewModel.curBookSource?.hasLogin() == true
         menu.findItem(R.id.menu_set_source_variable)?.isVisible = hasSource
         menu.findItem(R.id.menu_set_book_variable)?.isVisible = hasSource
-        menu.findItem(R.id.menu_upload)?.isVisible = book?.origin == BookType.localTag
+        menu.findItem(R.id.menu_upload)?.isVisible =
+            book?.isLocal == true && book?.isImage != true
+                && book?.bookUrl?.startsWith(BookType.webDavTag) != true
         menu.findItem(R.id.menu_download_local)?.isVisible =
             book?.origin?.startsWith(BookType.webDavTag) == true
         menu.findItem(R.id.menu_review)?.isVisible =
@@ -305,12 +318,8 @@ class BookInfoActivity :
     }
 
     private fun uploadBook(book: Book) {
-        if (book.getRemoteUrl() != null) {
-            alert(R.string.draw, R.string.sure_upload) {
-                okButton { viewModel.uploadBook(book) }
-                cancelButton()
-            }
-        } else viewModel.uploadBook(book)
+        //云端冲突确认由 uploadConflictData 流程处理；这里直接发起上传
+        viewModel.uploadBook(book)
     }
 
     override fun observeLiveBus() {

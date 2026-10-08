@@ -47,9 +47,14 @@ open class WebDav(
     companion object {
 
         fun fromPath(path: String): WebDav {
-            val id = AnalyzeUrl(path).serverID ?: throw WebDavException("没有serverID")
-            val authorization = Authorization(id)
-            return WebDav(path, authorization)
+            val cleanUrl = CustomUrl(path).getUrl()
+            val id = AnalyzeUrl(path).serverID
+            //serverID记录已删除时仅当同主机才回退默认授权，防止凭据发给其他服务器
+            val authorization = id?.let {
+                kotlin.runCatching { Authorization(it) }.getOrNull()
+            } ?: io.legado.app.help.AppWebDav.defaultAuthorizationFor(cleanUrl)
+                ?: throw WebDavException("没有serverID")
+            return WebDav(cleanUrl, authorization)
         }
 
         @SuppressLint("DateTimeFormatter")
@@ -80,6 +85,16 @@ open class WebDav(
             </propfind>"""
 
         private const val DEFAULT_CONTENT_TYPE = "application/octet-stream"
+
+        /**
+         * 拼接目录URL与文件名，对文件名做URL编码（中文/空格/#等）
+         */
+        fun joinPath(dirUrl: String, fileName: String): String {
+            return dirUrl.removeSuffix("/").toHttpUrl().newBuilder()
+                .addPathSegment(fileName)
+                .build()
+                .toString()
+        }
     }
 
 
@@ -120,12 +135,47 @@ open class WebDav(
         }
 
     /**
+     * 获取当前url文件信息，不存在返回null；其他错误照常抛出
+     */
+    @Throws(WebDavException::class)
+    suspend fun getWebDavFileOrNull(): WebDavFile? {
+        return try {
+            getWebDavFile()
+        } catch (e: ObjectNotFoundException) {
+            null
+        }
+    }
+
+    /**
      * 获取当前url文件信息
      */
     @Throws(WebDavException::class)
     suspend fun getWebDavFile(): WebDavFile? {
         return propFindResponse(depth = 0)?.let {
             parseBody(it).firstOrNull()
+        }
+    }
+
+    /**
+     * 确保当前url是目录，不存在则创建；父目录必须已存在
+     */
+    @Throws(WebDavException::class)
+    suspend fun ensureDirectory() {
+        val existing = getWebDavFileOrNull()
+        if (existing != null) {
+            if (existing.isDir) return
+            throw WebDavException("目标已存在同名文件，无法作为目录使用")
+        }
+        val url = httpUrl ?: throw WebDavException("url不能为空")
+        webDavClient.newCallResponse {
+            url(url)
+            method("MKCOL", null)
+        }.use { response ->
+            if (response.code == 405) {
+                //并发创建时允许已存在
+                if (getWebDavFileOrNull()?.isDir == true) return
+            }
+            checkResult(response)
         }
     }
 
@@ -377,13 +427,30 @@ open class WebDav(
 
     @Throws(WebDavException::class)
     suspend fun upload(uri: Uri, contentType: String = DEFAULT_CONTENT_TYPE) {
-        // 务必注意RequestBody不要嵌套，不然上传时内容可能会被追加多余的文件信息
+        uploadChecked(uri, contentType, expectedLastModify = null, createOnly = false)
+    }
+
+    /**
+     * 条件上传文件路径版本
+     */
+    @Throws(WebDavException::class)
+    suspend fun uploadChecked(
+        file: File,
+        contentType: String = DEFAULT_CONTENT_TYPE,
+        expectedLastModify: Long?,
+        createOnly: Boolean
+    ) {
         kotlin.runCatching {
             withContext(IO) {
-                val fileBody = uri.toRequestBody(contentType.toMediaType())
-                val url = httpUrl ?: throw NoStackTraceException("url不能为空")
+                if (!file.exists()) throw WebDavException("文件不存在")
+                val fileBody = file.asRequestBody(contentType.toMediaType())
+                val url = httpUrl ?: throw WebDavException("url不能为空")
                 webDavClient.newCallResponse {
                     url(url)
+                    if (createOnly) header("If-None-Match", "*")
+                    if (expectedLastModify != null && expectedLastModify > 0) {
+                        header("If-Unmodified-Since", formatHttpDate(expectedLastModify))
+                    }
                     put(fileBody)
                 }.use {
                     checkResult(it)
@@ -391,9 +458,50 @@ open class WebDav(
             }
         }.onFailure {
             currentCoroutineContext().ensureActive()
+            if (it is WebDavConflictException) throw it
             AppLog.put("WebDav上传失败\n${it.localizedMessage}", it)
             throw WebDavException("WebDav上传失败\n${it.localizedMessage}")
         }
+    }
+
+    /**
+     * 条件上传：createOnly 要求目标不存在才创建；expectedLastModify 非空时目标未被改动才覆盖。
+     * 服务器返回 412 抛 WebDavConflictException，避免确认到上传之间的窗口期覆盖云端。
+     */
+    @Throws(WebDavException::class)
+    suspend fun uploadChecked(
+        uri: Uri,
+        contentType: String = DEFAULT_CONTENT_TYPE,
+        expectedLastModify: Long?,
+        createOnly: Boolean
+    ) {
+        kotlin.runCatching {
+            withContext(IO) {
+                val fileBody = uri.toRequestBody(contentType.toMediaType())
+                val url = httpUrl ?: throw WebDavException("url不能为空")
+                webDavClient.newCallResponse {
+                    url(url)
+                    if (createOnly) header("If-None-Match", "*")
+                    if (expectedLastModify != null && expectedLastModify > 0) {
+                        header("If-Unmodified-Since", formatHttpDate(expectedLastModify))
+                    }
+                    put(fileBody)
+                }.use {
+                    checkResult(it)
+                }
+            }
+        }.onFailure {
+            currentCoroutineContext().ensureActive()
+            if (it is WebDavConflictException) throw it
+            AppLog.put("WebDav上传失败\n${it.localizedMessage}", it)
+            throw WebDavException("WebDav上传失败\n${it.localizedMessage}")
+        }
+    }
+
+    private fun formatHttpDate(timeMillis: Long): String {
+        return dateTimeFormatter.format(
+            ZonedDateTime.ofInstant(java.time.Instant.ofEpochMilli(timeMillis), java.time.ZoneOffset.UTC)
+        )
     }
 
     @Throws(WebDavException::class)
@@ -431,6 +539,12 @@ open class WebDav(
      */
     private fun checkResult(response: Response) {
         if (!response.isSuccessful) {
+            if (response.code == 404 || response.code == 410) {
+                throw ObjectNotFoundException("$path doesn't exist. code:${response.code}")
+            }
+            if (response.code == 412) {
+                throw WebDavConflictException("$path 云端文件与预期不一致")
+            }
             val body = response.body.string()
             if (response.code == 401) {
                 val headers = response.headers("WWW-Authenticate")

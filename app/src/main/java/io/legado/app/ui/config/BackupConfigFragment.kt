@@ -41,6 +41,7 @@ import io.legado.app.utils.isContentScheme
 import io.legado.app.utils.setEdgeEffectColor
 import io.legado.app.utils.showDialogFragment
 import io.legado.app.utils.showHelp
+import io.legado.app.utils.toastOnUi
 import io.legado.app.utils.toEditable
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.launch
@@ -149,6 +150,11 @@ class BackupConfigFragment : PreferenceFragment(),
                 } else {
                     WaitDialog.dismiss(a)
                 }
+            }
+        }
+        viewModel.webDavConfigState.observe(viewLifecycleOwner) { msg ->
+            if (!msg.isNullOrBlank()) {
+                requireContext().toastOnUi(msg)
             }
         }
     }

@@ -20,7 +20,9 @@ import splitties.init.appCtx
 class ConfigViewModel(application: Application) : BaseViewModel(application) {
 
     val backupRestoreState = MutableLiveData<String?>()
+    val webDavConfigState = MutableLiveData<String?>()
     private var backupRestoreJob: io.legado.app.help.coroutine.Coroutine<*>? = null
+    private var webDavConfigJob: io.legado.app.help.coroutine.Coroutine<*>? = null
 
     fun cancelBackupRestore() {
         backupRestoreJob?.cancel()
@@ -28,8 +30,16 @@ class ConfigViewModel(application: Application) : BaseViewModel(application) {
     }
 
     fun upWebDavConfig() {
-        execute {
+        webDavConfigJob?.cancel()
+        webDavConfigJob = execute {
+            webDavConfigState.postValue("正在连接WebDav…")
             AppWebDav.upConfig()
+            "WebDav已连接，books/bookProgress/background 目录就绪"
+        }.onSuccess {
+            webDavConfigState.postValue(it)
+        }.onError {
+            AppLog.put("WebDav配置失败", it)
+            webDavConfigState.postValue("WebDav配置失败：${it.localizedMessage}")
         }
     }
 
