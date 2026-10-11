@@ -1,6 +1,7 @@
 package io.legado.app.help
 
 import android.net.Uri
+import io.legado.app.R
 import io.legado.app.constant.AppLog
 import io.legado.app.constant.PreferKey
 import io.legado.app.data.appDb
@@ -30,6 +31,7 @@ import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import splitties.init.appCtx
 import java.io.File
 
@@ -63,15 +65,12 @@ object AppWebDav {
     /**
      * 按URL主机返回默认授权；仅当目标主机与默认根地址一致时才交出凭据，
      * 防止把默认账号密码发给其他WebDAV服务器。
+     * 用HttpUrl容错解析：远端路径常为解码形式（含空格/中文），java.net.URI会直接抛异常
      */
     fun defaultAuthorizationFor(url: String): Authorization? {
         val authorization = authorization ?: return null
-        val rootHost = kotlin.runCatching {
-            java.net.URI(rootWebDavUrl).host
-        }.getOrNull() ?: return null
-        val targetHost = kotlin.runCatching {
-            java.net.URI(url).host
-        }.getOrNull() ?: return null
+        val rootHost = rootWebDavUrl.toHttpUrlOrNull()?.host ?: return null
+        val targetHost = url.toHttpUrlOrNull()?.host ?: return null
         return authorization.takeIf { rootHost.equals(targetHost, true) }
     }
 
@@ -98,13 +97,19 @@ object AppWebDav {
 
     suspend fun upConfig() {
         configMutex.withLock {
-            val account = appCtx.getPrefString(PreferKey.webDavAccount)
-            val password = appCtx.getPrefString(PreferKey.webDavPassword)
-            if (account.isNullOrEmpty() || password.isNullOrEmpty()) {
+            val url = appCtx.getPrefString(PreferKey.webDavUrl)
+            if (url.isNullOrEmpty()) {
+                //地址为空视为未配置，断开连接
                 activeRootUrl = null
                 authorization = null
                 defaultBookWebDav = null
                 return
+            }
+            val account = appCtx.getPrefString(PreferKey.webDavAccount)
+            val password = appCtx.getPrefString(PreferKey.webDavPassword)
+            if (account.isNullOrEmpty() || password.isNullOrEmpty()) {
+                //凭据不完整时保留上一份可用连接，由调用方给出可见提示
+                throw NoStackTraceException(appCtx.getString(R.string.web_dav_config_incomplete))
             }
             val mAuthorization = Authorization(account, password)
             //全部目录就绪后才发布新配置；中途失败保留上一份可用连接

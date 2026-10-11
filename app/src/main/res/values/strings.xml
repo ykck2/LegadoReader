@@ -619,6 +619,13 @@
     <string name="web_dav_url">WebDav server address</string>
     <string name="web_dav_account">WebDav account</string>
     <string name="web_dav_account_s">Input your WebDav account</string>
+    <string name="web_dav_pick_dir">Select directory</string>
+    <string name="web_dav_pick_dir_s">Browse the server and choose the WebDav working directory</string>
+    <string name="web_dav_pick_use">Use this directory</string>
+    <string name="web_dav_pick_detected">Detected legado directory</string>
+    <string name="web_dav_pick_need_config">Please fill in server address, account and password first</string>
+    <string name="web_dav_url_changed">Server address changed, use Select directory to apply</string>
+    <string name="web_dav_config_incomplete">WebDav account or password is empty, config not applied</string>
     <string name="rss_source">RSS source</string>
     <string name="rss_source_edit">Edit RSS source</string>
     <string name="screen">Filter</string>

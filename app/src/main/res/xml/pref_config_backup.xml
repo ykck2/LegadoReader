@@ -27,11 +27,10 @@
             android:title="@string/web_dav_pw"
             app:iconSpaceReserved="false" />
 
-        <io.legado.app.lib.prefs.EditTextPreference
-            android:key="webDavDir"
-            android:title="@string/sub_dir"
-            app:allowDividerAbove="false"
-            app:allowDividerBelow="false"
+        <io.legado.app.lib.prefs.Preference
+            android:key="web_dav_pick_dir"
+            android:summary="@string/web_dav_pick_dir_s"
+            android:title="@string/web_dav_pick_dir"
             app:iconSpaceReserved="false" />
 
         <io.legado.app.lib.prefs.EditTextPreference
