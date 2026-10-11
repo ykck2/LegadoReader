@@ -76,10 +76,30 @@ class BookInfoViewModel(application: Application) : BaseReadViewModel(applicatio
                 book.origin = BookType.localTag
             } else {
                 AppLog.put("下载远程书籍<${book.name}>失败", it)
+                context.toastOnUi("云端刷新失败，已保留原书内容（详情见日志）")
             }
         }.onFinally {
             execute { loadBookInfo(book) }
         }.start()
+    }
+
+    private fun readBookFileBytes(book: Book): ByteArray? {
+        val uri = book.bookUrl.toUri()
+        return if (uri.isContentScheme()) {
+            context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
+        } else {
+            java.io.File(uri.path!!).takeIf { it.exists() }?.readBytes()
+        }
+    }
+
+    private fun writeBookFileBytes(book: Book, data: ByteArray) {
+        val uri = book.bookUrl.toUri()
+        if (uri.isContentScheme()) {
+            context.contentResolver.openOutputStream(uri, "wt")?.use { it.write(data) }
+                ?: throw java.io.IOException("无法写回原文件")
+        } else {
+            java.io.File(uri.path!!).writeBytes(data)
+        }
     }
 
     private suspend fun refreshWebDavBook(book: Book) {
@@ -101,6 +121,8 @@ class BookInfoViewModel(application: Application) : BaseReadViewModel(applicatio
         val oldLatestChapterTitle = book.latestChapterTitle
         val oldWordCount = book.wordCount
         val oldLatestChapterTime = book.latestChapterTime
+        //覆盖前备份原文件内容：解析失败时恢复，避免"新文件+旧目录"的半成品状态
+        val oldContent = readBookFileBytes(book)
         val uri = webDav.downloadInputStream().let {
             FileBook.saveBookFile(it, book.originName)
         }
@@ -136,6 +158,17 @@ class BookInfoViewModel(application: Application) : BaseReadViewModel(applicatio
             book.latestChapterTitle = oldLatestChapterTitle
             book.wordCount = oldWordCount
             book.latestChapterTime = oldLatestChapterTime
+            //恢复原文件内容并清理新文件缓存，保证磁盘与数据库一致
+            if (oldContent != null) {
+                runCatching {
+                    writeBookFileBytes(book, oldContent)
+                    BookHelp.clearCache(book)
+                }.onFailure { restoreErr ->
+                    AppLog.put("恢复原书文件失败<${book.name}>", restoreErr)
+                }
+            } else {
+                AppLog.put("云端刷新<${book.name}>失败：原文件内容备份缺失，无法恢复")
+            }
             throw e
         }
     }
@@ -269,9 +302,16 @@ class BookInfoViewModel(application: Application) : BaseReadViewModel(applicatio
 
     /**
      * 上传本地书籍到WebDav。overwrite=false 时云端有更新则通过 uploadConflictData 请求用户确认，
-     * 确认后以 overwrite=true 重入；条件PUT避免确认到上传间被他人覆盖。
+     * 确认后带 confirmedLastModify 重入；上传前再次校验云端未被改动（服务端不支持条件头时，
+     * 客户端复校是唯一防线），同步基线取确认时的远端时间而非后置PROPFIND。
      */
-    fun uploadBook(book: Book, overwrite: Boolean = false) {
+    fun uploadBook(
+        book: Book,
+        overwrite: Boolean = false,
+        confirmedLastModify: Long? = null
+    ) {
+        //新建(true)/更新(false)区分成功文案；execute 块返回 UploadConflict? 表示需用户确认
+        var created = false
         execute {
             waitDialogData.postValue(true)
             if (book.bookUrl.startsWith(BookType.webDavTag)) {
@@ -293,24 +333,34 @@ class BookInfoViewModel(application: Application) : BaseReadViewModel(applicatio
                 webDav = io.legado.app.lib.webdav.WebDav(targetUrl, bookWebDav.authorization)
             }
             val remoteFile = webDav.getWebDavFileOrNull()
-            if (remoteFile != null && !overwrite) {
-                //未关联书籍遇到云端同名文件一律确认；已关联书籍仅在云端较新时确认
-                val needConfirm = remoteUrl == null || remoteFile.lastModify > book.lastCheckTime
-                if (needConfirm) {
-                    return@execute UploadConflict(remoteUrl == null, remoteFile.lastModify)
-                }
-            }
             if (remoteFile == null) {
+                created = true
                 uploadBookFile(webDav, book, expectedLastModify = null, createOnly = true)
+                //新建文件：以创建后的服务器时间作基线（新建文件被第三方抢先覆盖的概率可忽略）
+                book.lastCheckTime = webDav.getWebDavFileOrNull()?.lastModify
+                    ?: System.currentTimeMillis()
             } else {
+                if (!overwrite) {
+                    //fail-closed：远端缺元数据视为无法判定，必须走确认；已关联书仅在云端较新时确认
+                    val needConfirm = remoteUrl == null || remoteFile.lastModify <= 0
+                        || remoteFile.lastModify > book.lastCheckTime
+                    if (needConfirm) {
+                        return@execute UploadConflict(remoteUrl == null, remoteFile.lastModify)
+                    }
+                } else if (confirmedLastModify != null
+                    && remoteFile.lastModify != confirmedLastModify
+                ) {
+                    //确认到重传之间云端又被改动：服务端条件头不可靠，客户端复校是唯一防线
+                    throw NoStackTraceException("云端文件刚被再次修改，已取消上传，请重试")
+                }
+                val confirmedBase = remoteFile.lastModify.takeIf { it > 0 } ?: confirmedLastModify
                 uploadBookFile(
                     webDav, book,
-                    expectedLastModify = remoteFile.lastModify, createOnly = false
+                    expectedLastModify = confirmedBase, createOnly = false
                 )
+                //更新场景以确认时的远端时间为基线，后置PROPFIND会把第三方抢先写入误记为基线
+                book.lastCheckTime = confirmedBase ?: book.lastCheckTime
             }
-            //以服务器实际修改时间作为同步基线
-            book.lastCheckTime = webDav.getWebDavFileOrNull()?.lastModify
-                ?: System.currentTimeMillis()
             if (remoteUrl == null) {
                 book.origin = BookType.webDavTag + targetUrl
             }
@@ -320,7 +370,9 @@ class BookInfoViewModel(application: Application) : BaseReadViewModel(applicatio
             if (conflict != null) {
                 uploadConflictData.postValue(conflict)
             } else {
-                context.toastOnUi("上传成功")
+                context.toastOnUi(
+                    if (created) R.string.upload_success_new else R.string.upload_success_update
+                )
                 bookData.postValue(book)
             }
         }.onError {

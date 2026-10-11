@@ -209,8 +209,14 @@ class BookInfoActivity :
             } else {
                 "云端副本比上次同步更新，继续上传将覆盖云端修改"
             }
-            alert(getString(R.string.draw), message) {
-                okButton { viewModel.uploadBook(book, overwrite = true) }
+            alert(getString(R.string.webdav_conflict_title), message) {
+                okButton {
+                    viewModel.uploadBook(
+                        book,
+                        overwrite = true,
+                        confirmedLastModify = conflict.remoteLastModify
+                    )
+                }
                 cancelButton()
             }
         }
