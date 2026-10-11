@@ -18,7 +18,7 @@ import splitties.init.appCtx
 
 /**
  * WebDav工作目录选择器：浏览远端目录，确认后返回选定的具体目录URL。
- * 打开时自动探测legado目录（根/legado、根/*/legado，限两层），
+ * 打开时自动探测legado目录（根目录下的legado、子目录下的legado，限两层），
  * 唯一命中则自动定位，未命中或多个命中时由用户手动导航。
  */
 class WebDavDirPickDialog : BaseDialogFragment(R.layout.dialog_webdav_dir_pick) {
