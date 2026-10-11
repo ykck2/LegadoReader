@@ -186,9 +186,11 @@ open class WebDav(
     @Throws(WebDavException::class)
     suspend fun listFiles(): List<WebDavFile> {
         propFindResponse()?.let { body ->
-            val normalizedPath = path.removeSuffix("/")
+            //两侧统一解码后比较：请求路径与返回href的编码状态可能不一致
+            //（如路径含空格/中文时，服务器返回编码href而path为原始形式），否则目录自身会泄漏进列表
+            val selfPath = URLDecoder.decodeForPath(path, Charsets.UTF_8).removeSuffix("/")
             return parseBody(body).filter {
-                it.path.removeSuffix("/") != normalizedPath
+                URLDecoder.decodeForPath(it.path, Charsets.UTF_8).removeSuffix("/") != selfPath
             }
         }
         return emptyList()

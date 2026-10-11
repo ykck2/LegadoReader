@@ -50,9 +50,13 @@ import splitties.init.appCtx
 
 class BackupConfigFragment : PreferenceFragment(),
     SharedPreferences.OnSharedPreferenceChangeListener,
-    MenuProvider {
+    MenuProvider,
+    WebDavDirPickDialog.Callback {
 
     private val viewModel by activityViewModels<ConfigViewModel>()
+
+    //「选择目录」确认后写偏好会触发本监听，置位以跳过"地址已修改"提示
+    private var pendingPickApply = false
 
     private val selectBackupPath by lazy {
         registerHandleFile { result ->
@@ -104,12 +108,6 @@ class BackupConfigFragment : PreferenceFragment(),
                 editText.setSelection(editText.text.length)
             }
         }
-        findPreference<EditTextPreference>(PreferKey.webDavDir)?.let {
-            it.setOnBindEditTextListener { editText ->
-                editText.text = AppConfig.webDavDir?.toEditable()
-                editText.setSelection(editText.text.length)
-            }
-        }
         findPreference<EditTextPreference>(PreferKey.webDavDeviceName)?.let {
             it.setOnBindEditTextListener { editText ->
                 editText.text = AppConfig.webDavDeviceName?.toEditable()
@@ -119,7 +117,6 @@ class BackupConfigFragment : PreferenceFragment(),
         upPreferenceSummary(PreferKey.webDavUrl, getPrefString(PreferKey.webDavUrl))
         upPreferenceSummary(PreferKey.webDavAccount, getPrefString(PreferKey.webDavAccount))
         upPreferenceSummary(PreferKey.webDavPassword, getPrefString(PreferKey.webDavPassword))
-        upPreferenceSummary(PreferKey.webDavDir, AppConfig.webDavDir)
         upPreferenceSummary(PreferKey.webDavDeviceName, AppConfig.webDavDeviceName)
         upPreferenceSummary(PreferKey.backupPath, getPrefString(PreferKey.backupPath))
         findPreference<io.legado.app.lib.prefs.Preference>("web_dav_restore")
@@ -184,12 +181,28 @@ class BackupConfigFragment : PreferenceFragment(),
     override fun onSharedPreferenceChanged(sharedPreferences: SharedPreferences?, key: String?) {
         when (key) {
             PreferKey.backupPath -> upPreferenceSummary(key, getPrefString(key))
-            PreferKey.webDavUrl,
+            PreferKey.webDavUrl -> {
+                //监听回调与标志位需同步读取；post内的toast在标志复位后执行
+                val fromPick = pendingPickApply
+                listView.post {
+                    upPreferenceSummary(key, appCtx.getPrefString(key))
+                    if (!fromPick) {
+                        //地址手工修改不自动生效：最终路径须经「选择目录」确认，避免拼出错误路径
+                        context?.toastOnUi(R.string.web_dav_url_changed)
+                    }
+                }
+            }
+
             PreferKey.webDavAccount,
-            PreferKey.webDavPassword,
-            PreferKey.webDavDir -> listView.post {
+            PreferKey.webDavPassword -> listView.post {
                 upPreferenceSummary(key, appCtx.getPrefString(key))
-                viewModel.upWebDavConfig()
+                val dir = getPrefString(PreferKey.webDavDir)
+                val account = getPrefString(PreferKey.webDavAccount)
+                val password = getPrefString(PreferKey.webDavPassword)
+                if (dir != null && !account.isNullOrEmpty() && !password.isNullOrEmpty()) {
+                    //已选定过目录（具体路径模式）：凭据变化直接重新验证发布；未选过目录时须走「选择目录」
+                    viewModel.upWebDavConfig()
+                }
             }
 
             PreferKey.webDavDeviceName -> upPreferenceSummary(key, getPrefString(key))
@@ -220,11 +233,6 @@ class BackupConfigFragment : PreferenceFragment(),
                     preference.summary = "*".repeat(value.length)
                 }
 
-            PreferKey.webDavDir -> preference.summary = when (value) {
-                null -> "legado"
-                else -> value
-            }
-
             else -> {
                 if (preference is ListPreference) {
                     val index = preference.findIndexOfValue(value)
@@ -241,11 +249,37 @@ class BackupConfigFragment : PreferenceFragment(),
         when (preference.key) {
             PreferKey.backupPath -> selectBackupPath.launch()
             PreferKey.restoreIgnore -> backupIgnore()
+            "web_dav_pick_dir" -> openWebDavDirPickDialog()
             "web_dav_backup" -> backup()
             "web_dav_restore" -> restore()
             "import_old" -> restoreOld.launch()
         }
         return super.onPreferenceTreeClick(preference)
+    }
+
+    /**
+     * 打开WebDav目录选择器；地址和凭据齐全才允许进入
+     */
+    private fun openWebDavDirPickDialog() {
+        val url = getPrefString(PreferKey.webDavUrl)
+        val account = getPrefString(PreferKey.webDavAccount)
+        val password = getPrefString(PreferKey.webDavPassword)
+        if (url.isNullOrBlank() || account.isNullOrBlank() || password.isNullOrBlank()) {
+            requireContext().toastOnUi(R.string.web_dav_pick_need_config)
+            return
+        }
+        showDialogFragment<WebDavDirPickDialog>()
+    }
+
+    override fun onWebDavDirPicked(url: String) {
+        //选定目录即最终工作路径；子目录清空，停用旧的拼接逻辑
+        pendingPickApply = true
+        preferenceManager.sharedPreferences?.edit()
+            ?.putString(PreferKey.webDavUrl, url)
+            ?.putString(PreferKey.webDavDir, "")
+            ?.apply()
+        pendingPickApply = false
+        viewModel.upWebDavConfig()
     }
 
     /**
