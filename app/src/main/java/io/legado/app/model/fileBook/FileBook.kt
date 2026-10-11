@@ -412,7 +412,9 @@ object FileBook : BaseFileBook {
         val webDavUrl = book.getRemoteUrl()
         if (webDavUrl.isNullOrBlank()) throw NoStackTraceException("Book file is not webDav File")
         val fileName = if (book.isArchive) book.archiveName else book.originName
-        val fileUri = runBlocking { saveBookFile(webDavUrl, fileName) }
+        //重新带上webDavTag：走WebDav通道下载（带授权+状态校验）。
+        //裸URL会掉进AnalyzeUrl分支——无Authorization且不校验状态码，401/错误页会覆盖本地书
+        val fileUri = runBlocking { saveBookFile(BookType.webDavTag + webDavUrl, fileName) }
         if (book.isArchive) {
             val newBook = importFromArchive(fileUri, book.originName) { name ->
                 name.contains(book.originName)

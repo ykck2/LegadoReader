@@ -107,7 +107,7 @@ object ReadBook : CoroutineScope by MainScope() {
         if (isDiffBook){
             ReadTimeRecorder.setBook(ReadTimeRecorder.Source.READ_BOOK, book.name)
         }
-        if (chapterList?.get(0)?.bookUrl != book.bookUrl){
+        if (chapterList?.firstOrNull()?.bookUrl != book.bookUrl){
             chapterList = null
         }
         chapterSize = chapterList?.size ?: appDb.bookChapterDao.getChapterCount(book.bookUrl)
@@ -994,8 +994,19 @@ object ReadBook : CoroutineScope by MainScope() {
 
     fun onChapterListUpdated(newBook: Book, loadContent: Boolean = true) {
         if (newBook.isSameNameAuthor(book)) {
+            val oldDurIndex = durChapterIndex
+            val oldDurTitle = chapterList?.getOrNull(durChapterIndex)?.title
+                ?: book?.durChapterTitle
+            val oldTotal = chapterSize
             book = newBook
-            chapterSize = newBook.totalChapterNum
+            //重建内存目录：云端刷新后章节挂在(可能变化的)newBook.bookUrl下，
+            //旧chapterList的start/end偏移指向旧文件内容，必须整体替换
+            val newChapterList = appDb.bookChapterDao.getChapterList(newBook.bookUrl)
+            durChapterIndex = BookHelp.getDurChapter(
+                oldDurIndex, oldDurTitle, newChapterList, oldTotal
+            ).coerceIn(0, (newChapterList.size - 1).coerceAtLeast(0))
+            chapterList = newChapterList
+            chapterSize = newChapterList.size
             simulatedChapterSize = newBook.simulatedTotalChapterNum()
             if (simulatedChapterSize > 0 && durChapterIndex > simulatedChapterSize - 1) {
                 durChapterIndex = simulatedChapterSize - 1

@@ -7,6 +7,7 @@ import io.legado.app.R
 import io.legado.app.base.BaseViewModel
 import io.legado.app.constant.AppLog
 import io.legado.app.data.appDb
+import io.legado.app.exception.NoStackTraceException
 import io.legado.app.help.AppWebDav
 import io.legado.app.help.book.BookHelp
 import io.legado.app.help.storage.Backup
@@ -38,8 +39,14 @@ class ConfigViewModel(application: Application) : BaseViewModel(application) {
         }.onSuccess {
             webDavConfigState.postValue(it)
         }.onError {
-            AppLog.put("WebDav配置失败", it)
-            webDavConfigState.postValue("WebDav配置失败：${it.localizedMessage}")
+            AppLog.put("WebDav配置失败：${it.localizedMessage}", it)
+            //脱敏：自有提示（NoStackTraceException）展示原文；网络/服务端错误含URL与响应体，只进日志
+            val safeMessage = if (it is NoStackTraceException) {
+                it.localizedMessage
+            } else {
+                "请检查网络与账号配置，详情见日志"
+            }
+            webDavConfigState.postValue("WebDav配置失败：$safeMessage")
         }
     }
 

@@ -47,18 +47,25 @@ object AppWebDav {
     private val configMutex = Mutex()
 
     /**
-     * 与authorization一起原子发布；upConfig失败时保留旧快照，
-     * 避免"旧授权+新偏好URL"把凭据发往错误主机
+     * 单一不可变快照：rootUrl/授权/books目录一次性发布，消除"新rootUrl+旧授权"竞态窗口。
+     * upConfig 失败时保留旧快照，避免把凭据发往错误主机。
      */
+    private data class WebDavSnapshot(
+        val rootUrl: String,
+        val authorization: Authorization,
+        val defaultBookWebDav: RemoteBookWebDav
+    )
+
     @Volatile
-    private var activeRootUrl: String? = null
+    private var snapshot: WebDavSnapshot? = null
 
-    var authorization: Authorization? = null
-        private set
+    val authorization: Authorization?
+        get() = snapshot?.authorization
 
-    var defaultBookWebDav: RemoteBookWebDav? = null
+    val defaultBookWebDav: RemoteBookWebDav?
+        get() = snapshot?.defaultBookWebDav
 
-    val isOk get() = authorization != null
+    val isOk get() = snapshot != null
 
     val isJianGuoYun get() = rootWebDavUrl.startsWith(defaultWebDavUrl, true)
 
@@ -93,16 +100,14 @@ object AppWebDav {
     }
 
     private val rootWebDavUrl: String
-        get() = activeRootUrl ?: computeRootUrl()
+        get() = snapshot?.rootUrl ?: computeRootUrl()
 
     suspend fun upConfig() {
         configMutex.withLock {
             val url = appCtx.getPrefString(PreferKey.webDavUrl)
             if (url.isNullOrEmpty()) {
                 //地址为空视为未配置，断开连接
-                activeRootUrl = null
-                authorization = null
-                defaultBookWebDav = null
+                snapshot = null
                 return
             }
             val account = appCtx.getPrefString(PreferKey.webDavAccount)
@@ -112,7 +117,7 @@ object AppWebDav {
                 throw NoStackTraceException(appCtx.getString(R.string.web_dav_config_incomplete))
             }
             val mAuthorization = Authorization(account, password)
-            //全部目录就绪后才发布新配置；中途失败保留上一份可用连接
+            //全部目录就绪后才构建新快照；中途失败保留上一份可用连接
             val rootUrl = computeRootUrl()
             val bookProgress = "${rootUrl}bookProgress/"
             val exports = "${rootUrl}books/"
@@ -121,9 +126,11 @@ object AppWebDav {
             WebDav(bookProgress, mAuthorization).ensureDirectory()
             WebDav(exports, mAuthorization).ensureDirectory()
             WebDav(bg, mAuthorization).ensureDirectory()
-            activeRootUrl = rootUrl
-            defaultBookWebDav = RemoteBookWebDav(exports, mAuthorization)
-            authorization = mAuthorization
+            snapshot = WebDavSnapshot(
+                rootUrl,
+                mAuthorization,
+                RemoteBookWebDav(exports, mAuthorization)
+            )
         }
     }
 

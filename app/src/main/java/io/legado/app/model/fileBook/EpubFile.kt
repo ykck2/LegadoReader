@@ -4,6 +4,8 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.os.ParcelFileDescriptor
 import android.text.TextUtils
+import androidx.core.net.toUri
+import androidx.documentfile.provider.DocumentFile
 import io.legado.app.constant.AppLog
 import io.legado.app.constant.BookType
 import io.legado.app.data.entities.Book
@@ -23,6 +25,7 @@ import io.legado.app.lib.webdav.WebDav
 import io.legado.app.utils.FileUtils
 import io.legado.app.utils.HtmlFormatter
 import io.legado.app.utils.encodeURI
+import io.legado.app.utils.isContentScheme
 import io.legado.app.utils.isDataUrl
 import io.legado.app.utils.isXml
 import io.legado.app.utils.printOnDebug
@@ -30,6 +33,7 @@ import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
 import org.jsoup.parser.Parser
 import org.jsoup.select.Elements
+import splitties.init.appCtx
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
@@ -42,11 +46,35 @@ class EpubFile(var book: Book) {
 
     companion object : BaseFileBook {
         private var eFile: EpubFile? = null
+        private var eFileKey: String? = null
+
+        //内容指纹：content://文件被同名覆盖时URI不变，须按大小+修改时间识别内容变化，
+        //否则云端刷新后单例仍返回旧解析结果
+        private fun contentFingerprint(book: Book): String {
+            val url = book.bookUrl
+            return when {
+                url.startsWith(BookType.webDavTag) || url.startsWith("http") ->
+                    "remote:$url:${book.variable}"
+                else -> {
+                    val uri = url.toUri()
+                    if (uri.isContentScheme()) {
+                        val df = DocumentFile.fromSingleUri(appCtx, uri)
+                        "content:${df?.length()}:${df?.lastModified()}"
+                    } else {
+                        val f = File(uri.path ?: url)
+                        "file:${f.length()}:${f.lastModified()}"
+                    }
+                }
+            }
+        }
 
         @Synchronized
-        private fun getEFile(book: Book): EpubFile {
-            if (eFile == null || eFile?.book?.bookUrl != book.bookUrl) {
+        private fun getEFile(book: Book, checkContent: Boolean = false): EpubFile {
+            if (eFile == null || eFile?.book?.bookUrl != book.bookUrl
+                || (checkContent && eFileKey != contentFingerprint(book))
+            ) {
                 eFile = EpubFile(book)
+                eFileKey = contentFingerprint(book)
                 //对于Epub文件默认不启用替换
                 //io.legado.app.data.entities.Book getUseReplaceRule
                 return eFile!!
@@ -56,7 +84,8 @@ class EpubFile(var book: Book) {
         }
 
         override fun getChapterList(book: Book): ArrayList<BookChapter> {
-            return getEFile(book).getChapterList()
+            //目录解析必须校验内容指纹（云端刷新的入口）
+            return getEFile(book, checkContent = true).getChapterList()
         }
 
         override fun getContent(book: Book, chapter: BookChapter): String? {
